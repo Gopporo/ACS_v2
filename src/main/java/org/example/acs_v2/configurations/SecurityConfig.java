@@ -20,7 +20,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/", "/product/**", "/books/**", "/compilations/**", "/image/**", "/cart/**", "/addUser",
+                .antMatchers("/", "/product/**", "/books/**", "/compilations/**", "/image/**", "/cart/**",
                         "/information", "/im/**", "/css/**", "/static/**")
                 .permitAll()
                 .anyRequest().authenticated()

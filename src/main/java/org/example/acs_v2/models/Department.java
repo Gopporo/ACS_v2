@@ -2,12 +2,14 @@ package org.example.acs_v2.models;
 
 import javax.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.List;
 
 @Entity
 @Table(name = "departments")
 @Data
+@ToString(exclude = {"users", "head"})
 public class Department {
 
     @Id
@@ -21,6 +23,6 @@ public class Department {
     private List<User> users;
 
     @OneToOne
-    @JoinColumn(name = "head_id", unique = true, nullable = false) // Связь с таблицей User для руководителя
+    @JoinColumn(name = "head_id", unique = true) // Связь с таблицей User для руководителя
     private User head;
 }

@@ -17,8 +17,11 @@ public class Zone {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "disc")
+    private String disc;
+
     @Column(name = "zone_access_lvl")
-    private int zone_access_lvl;
+    private int zoneAccessLvl;
 
     @OneToMany(mappedBy = "zone", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Application> applications;

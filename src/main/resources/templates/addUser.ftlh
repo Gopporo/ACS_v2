@@ -32,7 +32,7 @@
     <div class="row py-lg-5">
         <div class="col-lg-6 col-md-8 mx-auto">
             <h1 class="fw-light">Создание аккаунта сотрудника</h1><br>
-            <form action="/addUser" method="post">
+            <form action="/admin/addUser" method="post">
                 <input name="name" type="text" class="form-control" placeholder="Введите ФИО" required><br>
                 <input type="email" class="form-control" id="email" placeholder="Введите почту" required name="email"><br>
                 <input id="password" name="password" type="password" class="form-control" placeholder="Придумайте пароль" required><br>
@@ -52,8 +52,14 @@
                     </label>
                 </div>
                 <br>
+                <select id="department" name="department_id" class="form-select">
+                    <#list departments as department>
+                        <option value="${department.id}">${department.name}</option>
+                    </#list>
+                </select>
+                <br>
                 <input name="position" type="text" class="form-control" placeholder="Введите должность" required><br>
-                <input name="access_lvl" type="number" class="form-control" placeholder="Введите уровень доступа" min="1" max="5" required><br>
+                <input name="userAccessLvl" type="number" class="form-control" placeholder="Введите уровень доступа" min="1" max="5" required><br>
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
                 <button type="submit" class="btn btn-dark">Добавить</button>
             </form>

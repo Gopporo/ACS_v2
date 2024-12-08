@@ -1,6 +1,7 @@
 package org.example.acs_v2.models;
 
 import lombok.Data;
+import lombok.ToString;
 import org.example.acs_v2.models.enums.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +13,7 @@ import java.util.*;
 @Entity
 @Table(name = "users")
 @Data
+@ToString(exclude = {"department", "managedDepartment"})
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,6 +32,10 @@ public class User implements UserDetails {
     private Image avatar;*/
     @Column(name = "password", length = 1000)
     private String password;
+    @Column(name = "position")
+    private String position;
+    @Column(name = "user_access_lvl")
+    private int userAccessLvl;
     private LocalDateTime dateOfCreated;
     @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "user_role",

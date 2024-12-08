@@ -2,8 +2,10 @@ package org.example.acs_v2.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.enums.Role;
+import org.example.acs_v2.repositories.DepartmentRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,10 +20,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserService {
     @Autowired
+    DepartmentRepository departmentRepository;
+    @Autowired
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public boolean createUser(User user, String role) {
+    public boolean createUser(User user, String role, Long departmentId) {
         System.out.println("Сервис вызвал");
         String userEmail = user.getEmail();
         if (userRepository.findByEmail(userEmail) != null)
@@ -30,10 +34,27 @@ public class UserService {
         user.setActive(true);
         if (role.equals("ROLE_USER")) {
             user.getRoles().add(Role.ROLE_USER);
+            if (departmentId != null) {
+                Department department = departmentRepository.findById(departmentId).orElseThrow(() ->
+                        new RuntimeException("Department with ID " + departmentId + " not found"));
+
+                user.setDepartment(department);
+            }
         } else user.getRoles().add(Role.ROLE_DIRECTOR);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        System.out.println(user.getUserAccessLvl());
         System.out.println("Пароль зашифровал");
         log.info("Saving new User with email: {}", userEmail);
+
+        // Назначаем главу отдела
+        if (departmentId != null) {
+            Department department = departmentRepository.findById(departmentId).orElseThrow(() ->
+                    new RuntimeException("Department with ID " + departmentId + " not found"));
+
+            user.setDepartment(department);
+        }
+
+
         userRepository.save(user);
         System.out.println("Пользователя сохранил");
         return true;
@@ -117,5 +138,17 @@ public class UserService {
         Long userId = user.getId();
         log.info("User with email: {} has ID: {}", email, userId);
         return userId;
+    }
+
+    public List<User> getUsersByAccessLvl(int userAccessLvl) {
+        return userRepository.findUsersByUserAccessLvl(userAccessLvl);
+    }
+
+    public List<User> getUsersByName(String name) {
+        return userRepository.findUsersByName(name);
+    }
+
+    public List<User> findDirectorsWithoutDepartment(){
+        return userRepository.findDirectorsWithoutDepartment();
     }
 }

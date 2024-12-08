@@ -41,22 +41,6 @@ public class UserController {
         return "login";
     }
 
-    @GetMapping("/addUser")
-    public String addUserMethod() {
-        System.out.println("Страничку вывел");
-        return "addUser";
-    }
-
-    @PostMapping("/addUser")
-    public String createUser(@RequestParam String role, User user, Model model) {
-        System.out.println("Данные отправил");
-        if (!userService.createUser(user, role)) {
-            model.addAttribute("errorMessage", "Пользователь с email: " + user.getEmail() + " уже существует");
-            return "addUser";
-        }
-        System.out.println("Буду переключать страничку на логин");
-        return "redirect:/login";
-    }
 
     @GetMapping("/user/{user}")
     public String userInfo(@PathVariable("user") User user, Model model, Principal principal) {
