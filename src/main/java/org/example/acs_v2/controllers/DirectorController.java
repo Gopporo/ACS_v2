@@ -199,4 +199,12 @@ public class DirectorController {
         model.addAttribute("userId", userService.getUserId(principal));
         return "director-report-info"; // Имя шаблона для отображения подробной информации по отчету
     }
+
+
+    @GetMapping("/director/deleteApplication/{id}")
+    public String deleteApplication(@PathVariable Long id) {
+        applicationService.deleteApplication(id);
+        return "redirect:/director/applications";
+    }
+
 }

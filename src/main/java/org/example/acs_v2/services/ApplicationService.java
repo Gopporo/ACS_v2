@@ -80,4 +80,8 @@ public class ApplicationService {
         application.setUser(null);
         applicationRepository.save(application);
     }
+
+    public void deleteApplication(Long id) {
+        applicationRepository.deleteById(id);
+    }
 }

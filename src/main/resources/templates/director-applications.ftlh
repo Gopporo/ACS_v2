@@ -124,6 +124,7 @@
                                 <p class="card-text">Описание: ${apl.disc}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <a href="/director/editApplication/${apl.id}" class="btn btn-dark me-2">Редактировать</a>
+                                    <a href="/director/deleteApplication/${apl.id}" class="btn btn-dark me-2">Удалить</a>
                                 </div>
                             </div>
                         </div>
