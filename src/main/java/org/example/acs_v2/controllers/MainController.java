@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.security.Principal;
 
@@ -16,7 +15,7 @@ public class MainController {
     @Autowired
     UserService userService;
 
-    @GetMapping("/")
+    @GetMapping("/index")
     public String product(Principal principal, Model model) {
         if (principal == null) {
             System.out.println("Пиздец, он(principal) 0");

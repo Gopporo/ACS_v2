@@ -22,6 +22,9 @@ public class Application{
     @Column(name = "disc")
     private String disc;
 
+    @Column(name = "completed")
+    private boolean completed;
+
     @ManyToOne
     @JoinColumn(name = "zone_id")
     private Zone zone;

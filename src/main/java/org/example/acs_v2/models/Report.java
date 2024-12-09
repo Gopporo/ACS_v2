@@ -20,6 +20,9 @@ public class Report {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt; // Дата и время создания отчета
 
+    @Transient
+    private String createdAtFormatted; // Поле для форматированной даты
+
     @OneToOne
     @JoinColumn(name = "application_id", nullable = false, unique = true) // Один отчет связан с одной заявкой
     private Application application;

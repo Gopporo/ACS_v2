@@ -3,16 +3,15 @@ package org.example.acs_v2.controllers;
 import lombok.RequiredArgsConstructor;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.services.UserService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -30,7 +29,7 @@ public class UserController {
         if (authentication != null && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             System.out.println("Перенаправляю на главную страницу");
-            return "redirect:/";
+            return "redirect:/index";
         }
         if (error != null) {
             model.addAttribute("errorMessage", "Your username and password are invalid.");
@@ -45,7 +44,6 @@ public class UserController {
     @GetMapping("/user/{user}")
     public String userInfo(@PathVariable("user") User user, Model model, Principal principal) {
         model.addAttribute("user", user);
-        // model.addAttribute("products", user.getProducts());
         model.addAttribute("userId", userService.getUserId(principal));
         model.addAttribute("role", userService.getUserRole(principal));
         return "user-info";
@@ -58,4 +56,33 @@ public class UserController {
         }
         return "redirect:/login?logout";
     }
+
+    @GetMapping("/user/profile/{user}")
+    public String userProfileInfo(@PathVariable("user") User user, Model model, Principal principal) {
+        model.addAttribute("user", user);
+        model.addAttribute("userId", userService.getUserId(principal));
+        model.addAttribute("role", userService.getUserRole(principal));
+        return "profile";
+    }
+
+    @GetMapping("/user/edit/{id}")
+    public String getUserEditPage(@PathVariable Long id, Model model, Principal principal) {
+        User user = userService.getById(id);
+        model.addAttribute("user", user);
+        model.addAttribute("userId", userService.getUserId(principal));
+        model.addAttribute("role", userService.getUserRole(principal));
+        return "profile-edit";
+    }
+
+    @PostMapping("/user/edit/{id}")
+    public String editUser(@PathVariable Long id, @ModelAttribute User user, RedirectAttributes redirectAttributes) {
+        try {
+            userService.updateUser(id, user);
+            redirectAttributes.addFlashAttribute("successMessage", "Данные успешно обновлены!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при обновлении данных: " + e.getMessage());
+        }
+        return "redirect:/logout";
+    }
+
 }

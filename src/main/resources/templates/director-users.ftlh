@@ -85,18 +85,16 @@
 
 <!-- Форма для отправки данных -->
 <div class="container w-100 d-flex justify-content-end">
-    <form class="mb-5" id="filterForm" action="/getUsersByAccessLvl" method="get">
+    <form class="mb-5" id="filterForm" action="/director/getUsersByAccessLvl" method="get">
         <input type="hidden" name="userAccessLvl" id="hiddenAccessLvl" value="">
     </form>
 </div>
 
 <main>
 
-    <a href="/admin/addUser" class="btn btn-dark d-block mx-auto mb-3" style="width: 200px;">Добавить пользователя</a><br>
-
     <!-- Строка для поиска -->
     <div class="container mb-4">
-        <form id="searchForm" action="/getUsersByName" method="get" class="d-flex justify-content-center">
+        <form id="searchForm" action="/director/getUsersByName" method="get" class="d-flex justify-content-center">
             <input type="text" class="form-control me-2" name="name" placeholder="Поиск по имени пользователя" aria-label="Поиск" id="searchInput">
             <button class="btn btn-dark" type="submit">Поиск</button>
         </form>
@@ -121,7 +119,7 @@
                                     <div class="btn-group">
                                         <a href="/user/${user.id}" class="btn btn-dark me-2">Просмотр</a>
                                         <#--По идее кнопка редактировать для начальника, чтобы поменять уровень доступа-->
-                                        <a href="admin/user/edit/${user.id}" class="btn btn-dark">Редактировать</a>
+                                        <a href="/director/editUser/${user.id}" class="btn btn-dark">Редактировать</a>
                                     </div>
                                 </div>
                             </div>

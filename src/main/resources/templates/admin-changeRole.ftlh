@@ -25,23 +25,22 @@
         Почта:<b>${user.email}</b>
         <br>
         Уровень доступа:<b>${user.userAccessLvl}</b>
-        <hr>
-        <a class="btn btn-primary"
-           href="
-<#if role??>
-    <#switch role>
-        <#case "ROLE_DIRECTOR">
-        /director/users
-        <#break>
-        <#case "ROLE_ADMIN">
-        /admin/users
-        <#break>
-    </#switch>
-</#if>
-">
-            Назад
-        </a>
         <br>
+        <form action="/admin/changeRole/${user.id}" method="post" class="needs-validation" novalidate>
+            <input type="hidden" name="userId" value="${user.id}">
+            <div class="mb-3">
+                <label for="roles" class="form-label">Роль</label>
+                <select class="form-select" id="roles" name="role" required>
+                    <#list roles as role>
+                        <option value="${role.name()}" <#if user.roles?seq_contains(role)>selected</#if>>${role.name()}</option>
+                    </#list>
+                </select>
+            </div>
+            <input type="hidden" name="_csrf" value="${_csrf.token}">
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
     </div>
     <#if errorMessage??>
         <h2 style="color: red">${errorMessage}</h2>

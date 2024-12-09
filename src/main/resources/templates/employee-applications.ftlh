@@ -12,8 +12,6 @@
     <link rel="canonical" href="https://getbootstrap.com/docs/5.0/examples/album/">
     <link rel="stylesheet" href="/css/filters.css">
 
-
-
     <!-- Bootstrap core CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
@@ -26,9 +24,7 @@
     <link rel="icon" href="/docs/5.0/assets/img/favicons/favicon.ico">
     <meta name="theme-color" content="#7952b3">
 
-
     <style>
-
         .card {
             height: 300px;
             overflow: hidden; /* Скрыть содержимое за границей карточки */
@@ -37,7 +33,12 @@
         .card-body {
             display: flex;
             flex-direction: column; /* Элементы внутри вертикально */
-            justify-content: space-between; /* Кнопки и другие элементы размещены корректно */
+            justify-content: flex-start; /* Кнопки и другие элементы размещены корректно */
+        }
+
+        .card-body > * {
+            margin-top: 0.2rem; /* Уменьшаем верхние отступы */
+            margin-bottom: 0.2rem; /* Уменьшаем нижние отступы */
         }
 
         .card-text {
@@ -60,20 +61,22 @@
             }
         }
 
+        .error-message {
+            text-align: center;
+            color: red;
+            font-weight: bold;
+            margin: 20px 0;
+        }
     </style>
-
-
 </head>
 
-<body  class="h-100">
+<body class="h-100">
 <!-- Include Navbar -->
 <header>
     <#include "components/navbar.ftl">
 </header>
 
-<!-- Фильтры
-Можно переделать под отделы, но тогда желательно определить отделы
--->
+<!-- Фильтры -->
 <div class="filters">
     <button class="filter-btn" data-lvl="-1">все</button>
     <button class="filter-btn" data-lvl="1">1</button>
@@ -85,51 +88,42 @@
 
 <!-- Форма для отправки данных -->
 <div class="container w-100 d-flex justify-content-end">
-    <form class="mb-5" id="filterForm" action="/admin/getUsersByAccessLvl" method="get">
-        <input type="hidden" name="userAccessLvl" id="hiddenAccessLvl" value="">
+    <form class="mb-5" id="filterForm" action="/employee/getApplicationsByAccessLvl" method="get">
+        <input type="hidden" name="accessLvl" id="hiddenAccessLvl" value="">
     </form>
 </div>
 
 <main>
-
-    <a href="/admin/addUser" class="btn btn-dark d-block mx-auto mb-3" style="width: 200px;">Добавить пользователя</a><br>
-
     <!-- Строка для поиска -->
     <div class="container mb-4">
-        <form id="searchForm" action="/admin/getUsersByName" method="get" class="d-flex justify-content-center">
-            <input type="text" class="form-control me-2" name="name" placeholder="Поиск по имени пользователя" aria-label="Поиск" id="searchInput">
+        <form id="searchForm" action="/employee/getApplicationsByName" method="get" class="d-flex justify-content-center">
+            <input type="text" class="form-control me-2" name="name" placeholder="Поиск по названию заявки" aria-label="Поиск" id="searchInput">
             <button class="btn btn-dark" type="submit">Поиск</button>
         </form>
     </div>
 
+    <#if errorMessage??>
+        <div class="alert alert-danger error-message" role="alert">
+            ${errorMessage}
+        </div>
+    </#if>
 
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                <#list users as user>
+                <#list applications as apl>
                     <div class="col">
                         <div class="card shadow-sm">
                             <div class="card-body">
-                                <h4>${user.name}</h4>
+                                <h4>${apl.name}</h4>
                                 <br>
-                                <p class="card-text">Занимаемая должность: ${user.position}</p>
+                                <p class="card-text">Зона доступа: ${apl.zone.name}</p>
                                 <br>
-                                <p class="card-text">Уровень доступа: ${user.userAccessLvl}</p>
+                                <p class="card-text">Уровень доступа: ${apl.accessLevel}</p>
                                 <br>
-                                <p class="card-text">Номер телефона: ${user.number_phone}</p>
+                                <p class="card-text">Описание: ${apl.disc}</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <#--<div class="btn-group">
-                                        <a href="/user/${user.id}" class="btn btn-dark me-2">Просмотр</a>
-                                    </div>-->
-                                    <#if user.active??>
-                                        <#if user.active>
-                                            <a href="/admin/userBlock/${user.id}" class="btn btn-dark me-2">Заблокировать</a>
-                                        <#else>
-                                            <a href="/admin/userBlock/${user.id}" class="btn btn-dark me-2">Разблокировать</a>
-                                        </#if>
-                                    </#if>
-                                    <a href="/admin/changeRole/${user.id}" class="btn btn-dark me-2">Редактировать</a>
-                                    <a href="/user/${user.id}" class="btn btn-dark me-2">Просмотр</a>
+                                    <a href="/employee/acceptApplication/${apl.id}" class="btn btn-dark me-2">Принять</a>
                                 </div>
                             </div>
                         </div>
@@ -138,9 +132,7 @@
             </div>
         </div>
     </div>
-
 </main>
-
 
 <script>
     // Получаем все кнопки с классом "filter-btn"

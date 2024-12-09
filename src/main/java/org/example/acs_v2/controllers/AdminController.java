@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
+import org.example.acs_v2.models.enums.Role;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;
@@ -12,13 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -37,7 +37,7 @@ public class AdminController {
 
     @GetMapping("/admin/users")
     public String manageUsers(Model model, Principal principal) {
-        List<User> users = userService.list(); // Метод для получения списка пользователей
+        List<User> users = userService.listForAdmin(); // Метод для получения списка пользователей
         model.addAttribute("users", users);
         model.addAttribute("role", userService.getUserRole(principal));
         model.addAttribute("userId", userService.getUserId(principal));
@@ -67,7 +67,7 @@ public class AdminController {
         return "redirect:/admin/users";
     }
 
-    @GetMapping("/getUsersByAccessLvl")
+    @GetMapping("/admin/getUsersByAccessLvl")
     public String getUsers(@RequestParam(required = false) int userAccessLvl, Model model, Principal principal) {
         List<User> users;
         if (userAccessLvl == -1) {
@@ -81,7 +81,7 @@ public class AdminController {
         return "admin-users";
     }
 
-    @GetMapping("/getUsersByName")
+    @GetMapping("/admin/getUsersByName")
     public String getUser(@RequestParam(required = false) String name, Model model, Principal principal) {
         List<User> users;
         if (name != null && !name.isEmpty()) {
@@ -93,6 +93,12 @@ public class AdminController {
         model.addAttribute("role", userService.getUserRole(principal));
         model.addAttribute("userId", userService.getUserId(principal));
         return "admin-users";
+    }
+
+    @GetMapping("/admin/userBlock/{id}")
+    public String toggleUserBlock(@PathVariable Long id) {
+        userService.toggleUserActiveStatus(id);
+        return "redirect:/admin/users"; // Перенаправляем обратно на список пользователей
     }
 
     @GetMapping("/admin/zones")
@@ -213,4 +219,49 @@ public class AdminController {
         model.addAttribute("userId", userService.getUserId(principal));
         return "admin-departments";
     }
+
+    @GetMapping("/admin/changeRole/{id}")
+    public String changeRole(@PathVariable Long id, Model model, Principal principal) {
+        // Получаем пользователя по ID
+        User user = userService.getById(id);
+        if (user == null) {
+            return "redirect:/admin/users"; // Если пользователь не найден, перенаправляем на страницу администратора
+        }
+
+        // Передаем роли как список значений из Enum
+        model.addAttribute("user", user);
+        model.addAttribute("roles", Role.values());
+        model.addAttribute("userId", userService.getUserId(principal));
+        model.addAttribute("role", userService.getUserRole(principal));// Список всех ролей из Enum
+        return "admin-changeRole";
+    }
+
+
+    @PostMapping("/admin/changeRole/{id}")
+    public String changeUserRole(@RequestParam("userId") Long userId, @RequestParam Map<String, String> form, RedirectAttributes redirectAttributes) {
+        User user = userService.getById(userId);
+        if (user == null) {
+            return "redirect:/admin/users"; // Если пользователь не найден, перенаправляем на страницу администратора
+        }
+
+        try {
+            // Изменяем роль пользователя
+            String roleName = form.get("role"); // Получаем роль, выбранную в форме
+            Role role = Role.valueOf(roleName); // Преобразуем строку в Enum
+
+            // Очистим текущие роли пользователя и добавим новую
+            user.getRoles().clear();
+            user.getRoles().add(role); // Устанавливаем новую роль
+
+            // Сохраняем изменения
+            userService.updateUser(user);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Роль пользователя обновлена!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при обновлении роли: " + e.getMessage());
+        }
+
+        return "redirect:/admin/users"; // Перенаправляем на страницу администратора
+    }
+
 }

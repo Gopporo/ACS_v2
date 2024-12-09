@@ -14,14 +14,14 @@
                 <#if role??>
                     <#switch role>
                         <#case "ROLE_USER">
-                            <a href="/applications" class="btn btn-outline-light me-2">Заявки</a>
-                            <a href="/applications/my" class="btn btn-outline-light me-2">Мои заявки</a>
-                            <a href="/reports/my" class="btn btn-outline-light me-2">Мои отчеты</a>
+                            <a href="/employee/applications" class="btn btn-outline-light me-2">Заявки</a>
+                            <a href="/employee/applications/my" class="btn btn-outline-light me-2">Мои заявки</a>
+                            <a href="/employee/reports" class="btn btn-outline-light me-2">Мои отчеты</a>
                             <#break>
                         <#case "ROLE_DIRECTOR">
-                            <a href="/users" class="btn btn-outline-light me-2">Сотрудники</a>
-                            <a href="/applications" class="btn btn-outline-light me-2">Заявки</a>
-                            <a href="/reports" class="btn btn-outline-light me-2">Отчеты</a>
+                            <a href="/director/users" class="btn btn-outline-light me-2">Сотрудники</a>
+                            <a href="/director/applications" class="btn btn-outline-light me-2">Заявки</a>
+                            <a href="/director/reports" class="btn btn-outline-light me-2">Отчеты</a>
                             <#break>
                         <#case "ROLE_ADMIN">
                             <a href="/admin/users" class="btn btn-outline-light me-2">Пользователи</a>
@@ -29,7 +29,7 @@
                             <a href="/admin/departments" class="btn btn-outline-light me-2">Отделы</a>
                             <#break>
                     </#switch>
-                    <a href="/user/${userId}" class="btn btn-outline-light me-2 d-flex align-items-center profile-btn">
+                    <a href="/user/profile/${userId}" class="btn btn-outline-light me-2 d-flex align-items-center profile-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true" class="me-1" viewBox="0 0 24 24">
                             <circle cx="12" cy="8" r="4"/> <!-- Голова -->
                             <path d="M6 18c0-3.33 5-5 6-5s6 1.67 6 5"/> <!-- Тело -->

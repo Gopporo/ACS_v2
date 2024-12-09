@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @Slf4j
@@ -61,4 +62,10 @@ public class DepartmentService {
     public List<Department> getDepartmentByName(String name) {
         return departmentRepository.findDepartmentsByName(name);
     }
+
+    public Department getDepartmentById(Long departmentId) {
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new NoSuchElementException("Department not found with id " + departmentId));
+    }
+
 }

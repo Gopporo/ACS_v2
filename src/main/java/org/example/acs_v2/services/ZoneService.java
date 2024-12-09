@@ -19,6 +19,12 @@ public class ZoneService {
     @Autowired
     ZoneRepository zoneRepository;
 
+    public Zone getById(Long id) {
+
+        return zoneRepository.findById(id).orElse(null);
+
+    }
+
     public boolean createZone(Zone zone) {
         System.out.println("Сервис для создания зоны вызвал");
         String zoneName = zone.getName();
