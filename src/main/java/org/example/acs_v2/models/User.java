@@ -27,15 +27,14 @@ public class User implements UserDetails {
     private String name;
     @Column(name = "active")
     private boolean active;
-    /*@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "image_id")
-    private Image avatar;*/
     @Column(name = "password", length = 1000)
     private String password;
     @Column(name = "position")
     private String position;
     @Column(name = "user_access_lvl")
     private int userAccessLvl;
+    @Column(name = "approved", nullable = false)
+    private boolean approved = false;
     private LocalDateTime dateOfCreated;
     @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "user_role",

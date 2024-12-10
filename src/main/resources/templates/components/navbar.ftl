@@ -24,6 +24,7 @@
                             <a href="/director/reports" class="btn btn-outline-light me-2">Отчеты</a>
                             <#break>
                         <#case "ROLE_ADMIN">
+                            <a href="/admin/preregistration" class="btn btn-outline-light me-2">Запросы на регистрацию</a>
                             <a href="/admin/users" class="btn btn-outline-light me-2">Пользователи</a>
                             <a href="/admin/zones" class="btn btn-outline-light me-2">Зоны</a>
                             <a href="/admin/departments" class="btn btn-outline-light me-2">Отделы</a>
@@ -37,7 +38,9 @@
                         <span>Профиль</span>
                     </a>
                 <#else>
-                    <a class="btn btn-outline-light me-2" href="/login">Login</a>
+                    <a class="btn btn-outline-light me-2" href="/login">Авторизация</a>
+                    <a class="btn btn-outline-light me-2" href="/registration">Регистрация</a>
+
                 </#if>
             </div>
         </div>

@@ -40,6 +40,25 @@ public class UserController {
         return "login";
     }
 
+    @GetMapping("/registration")
+    public String registration() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken)) {
+            System.out.println("Перенаправляю на главную страницу");
+            return "redirect:/index";
+        }
+        return "registration";
+    }
+
+    @PostMapping("/registration")
+    public String createUser(User user, Model model) {
+        if (!userService.preRegistrationUser(user)) {
+            model.addAttribute("errorMessage", "Пользователь с email: " + user.getEmail() + " уже существует");
+            return "registration";
+        }
+        return "redirect:/login";
+    }
 
     @GetMapping("/user/{user}")
     public String userInfo(@PathVariable("user") User user, Model model, Principal principal) {

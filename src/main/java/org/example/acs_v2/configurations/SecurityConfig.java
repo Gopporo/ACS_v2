@@ -20,8 +20,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/", "/product/**", "/books/**", "/compilations/**", "/image/**", "/cart/**",
-                        "/information", "/im/**", "/css/**", "/static/**")
+                .antMatchers("/css/**", "/static/**", "/registration")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -53,7 +52,7 @@ public class SecurityConfig {
     }
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/resources/**", "/static/**", "/css/**", "/js/**", "/images/**");
+        return (web) -> web.ignoring().antMatchers("/resources/**", "/static/**", "/css/**", "/js/**");
     }
 
 }

@@ -30,7 +30,7 @@
     <style>
 
         .card {
-            height: 300px;
+            height: 250px;
             overflow: hidden; /* Скрыть содержимое за границей карточки */
         }
 
@@ -71,35 +71,8 @@
     <#include "components/navbar.ftl">
 </header>
 
-<!-- Фильтры
-Можно переделать под отделы, но тогда желательно определить отделы
--->
-<div class="filters">
-    <button class="filter-btn" data-lvl="-1">все</button>
-    <button class="filter-btn" data-lvl="1">1</button>
-    <button class="filter-btn" data-lvl="2">2</button>
-    <button class="filter-btn" data-lvl="3">3</button>
-    <button class="filter-btn" data-lvl="4">4</button>
-    <button class="filter-btn" data-lvl="5">5</button>
-</div>
-
-<!-- Форма для отправки данных -->
-<div class="container w-100 d-flex justify-content-end">
-    <form class="mb-5" id="filterForm" action="/admin/getUsersByAccessLvl" method="get">
-        <input type="hidden" name="userAccessLvl" id="hiddenAccessLvl" value="">
-    </form>
-</div>
 
 <main>
-
-    <!-- Строка для поиска -->
-    <div class="container mb-4">
-        <form id="searchForm" action="/admin/getUsersByName" method="get" class="d-flex justify-content-center">
-            <input type="text" class="form-control me-2" name="name" placeholder="Поиск по имени пользователя" aria-label="Поиск" id="searchInput">
-            <button class="btn btn-dark" type="submit">Поиск</button>
-        </form>
-    </div>
-
 
     <div class="album py-5 bg-light">
         <div class="container">
@@ -110,24 +83,12 @@
                             <div class="card-body">
                                 <h4>${user.name}</h4>
                                 <br>
-                                <p class="card-text">Занимаемая должность: ${user.position}</p>
-                                <br>
-                                <p class="card-text">Уровень доступа: ${user.userAccessLvl}</p>
+                                <p class="card-text">Почта: ${user.number_phone}</p>
                                 <br>
                                 <p class="card-text">Номер телефона: ${user.number_phone}</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <#--<div class="btn-group">
-                                        <a href="/user/${user.id}" class="btn btn-dark me-2">Просмотр</a>
-                                    </div>-->
-                                    <#if user.active??>
-                                        <#if user.active>
-                                            <a href="/admin/userBlock/${user.id}" class="btn btn-dark me-2">Заблокировать</a>
-                                        <#else>
-                                            <a href="/admin/userBlock/${user.id}" class="btn btn-dark me-2">Разблокировать</a>
-                                        </#if>
-                                    </#if>
-                                    <a href="/admin/changeRole/${user.id}" class="btn btn-dark me-2">Редактировать</a>
-                                    <a href="/user/${user.id}" class="btn btn-dark me-2">Просмотр</a>
+                                    <a href="/admin/addUser/${user.id}" class="btn btn-dark me-2">Подтвердить</a>
+                                    <a href="/admin/deleteUser/${user.id}" class="btn btn-dark me-2">Отклонить</a>
                                 </div>
                             </div>
                         </div>
@@ -139,25 +100,6 @@
 
 </main>
 
-
-<script>
-    // Получаем все кнопки с классом "filter-btn"
-    const filterButtons = document.querySelectorAll('.filter-btn');
-
-    // Добавляем обработчик события для каждой кнопки
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            // Получаем значение data-lvl кнопки
-            const accessLvl = this.getAttribute('data-lvl');
-
-            // Устанавливаем значение в скрытое поле формы
-            document.getElementById('hiddenAccessLvl').value = accessLvl;
-
-            // Отправляем форму
-            document.getElementById('filterForm').submit();
-        });
-    });
-</script>
 
 <script>
     function validateAndFormatCost() {

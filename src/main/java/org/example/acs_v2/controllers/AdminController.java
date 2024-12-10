@@ -45,10 +45,17 @@ public class AdminController {
         return "admin-users";
     }
 
-    @GetMapping("/admin/addUser")
-    public String addUserMethod(Principal principal, Model model) {
-        System.out.println("Страничку вывел");
+    @GetMapping("/admin/addUser/{id}")
+    public String addUserMethod(@PathVariable Long id, Principal principal, Model model) {
+
+        User user = userService.getById(id);
+
+        if (user == null) {
+            return "redirect:/admin/users"; // Если пользователь не найден, перенаправляем на страницу администратора
+        }
+
         List<Department> departments = departmentService.list();
+        model.addAttribute("user", user);
         model.addAttribute("departments", departments);
         model.addAttribute("role", userService.getUserRole(principal));
         model.addAttribute("userId", userService.getUserId(principal));
@@ -56,15 +63,40 @@ public class AdminController {
         return "addUser";
     }
 
+
     @PostMapping("/admin/addUser")
-    public String createUser(@RequestParam String role,@RequestParam Long department_id, User user, Model model) {
-        System.out.println("Данные отправил");
-        if (!userService.createUser(user, role, department_id)) {
-            model.addAttribute("errorMessage", "Пользователь с email: " + user.getEmail() + " уже существует");
+    public String createUser(@RequestParam String role,
+                             @RequestParam Long department_id,
+                             @RequestParam String position,
+                             @RequestParam int userAccessLvl,
+                             @RequestParam Long userId,
+                             Model model) {
+        User user = userService.findById(userId);
+
+        if (user == null) {
+            model.addAttribute("errorMessage", "Пользователь с ID: " + userId + " не найден");
             return "addUser";
         }
-        System.out.println("Буду переключать страничку на всех пользователей");
+
+        user.setPosition(position);
+        user.setUserAccessLvl(userAccessLvl);
+        user.setApproved(true); // Одобрение пользователя администратором
+
+        if (!userService.updateUser(user, role, department_id)) {
+            model.addAttribute("errorMessage", "Ошибка при обновлении пользователя с email: " + user.getEmail());
+            return "addUser";
+        }
+
         return "redirect:/admin/users";
+    }
+
+    @GetMapping("/admin/deleteUser/{id}")
+    public String deleteUser(@PathVariable Long id, Model model) {
+        if (!userService.deleteUserById(id)) {
+            model.addAttribute("errorMessage", "Ошибка при удалении пользователя с ID: " + id);
+            return "error"; // Вернуть на страницу ошибки
+            }
+        return "redirect:/admin/preregistration";
     }
 
     @GetMapping("/admin/getUsersByAccessLvl")
@@ -264,4 +296,12 @@ public class AdminController {
         return "redirect:/admin/users"; // Перенаправляем на страницу администратора
     }
 
+    @GetMapping("/admin/preregistration")
+    public String getPendingUsers(Model model,Principal principal) {
+        List<User> pendingUsers = userService.getUsersWithApprovalStatus(false);
+        model.addAttribute("users", pendingUsers);
+        model.addAttribute("userId", userService.getUserId(principal));
+        model.addAttribute("role", userService.getUserRole(principal));
+        return "admin-preregistration"; // Имя шаблона, который вы указали
+    }
 }

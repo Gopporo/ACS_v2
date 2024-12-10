@@ -32,58 +32,77 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public boolean createUser(User user, String role, Long departmentId) {
-        System.out.println("Сервис вызвал");
+    public boolean preRegistrationUser(User user) {
+        System.out.println("Сервис для пререгистрации вызвал");
         String userEmail = user.getEmail();
         if (userRepository.findByEmail(userEmail) != null)
             return false;
         System.out.println("Почту проверил");
-        user.setActive(true);
-        if (role.equals("ROLE_USER")) {
-            user.getRoles().add(Role.ROLE_USER);
-            if (departmentId != null) {
-                Department department = departmentRepository.findById(departmentId).orElseThrow(() ->
-                        new RuntimeException("Department with ID " + departmentId + " not found"));
-
-                user.setDepartment(department);
-            }
-        } else user.getRoles().add(Role.ROLE_DIRECTOR);
+        user.setActive(false);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        System.out.println(user.getUserAccessLvl());
         System.out.println("Пароль зашифровал");
+
         log.info("Saving new User with email: {}", userEmail);
 
-        // Назначаем главу отдела
-        if (departmentId != null) {
-            Department department = departmentRepository.findById(departmentId).orElseThrow(() ->
-                    new RuntimeException("Department with ID " + departmentId + " not found"));
-
-            user.setDepartment(department);
-        }
-
-
         userRepository.save(user);
-        System.out.println("Пользователя сохранил");
+        System.out.println("Пререгистрация прошла успешно");
         return true;
     }
 
-    public List<User> list() {
-        return userRepository.findAll();
+    public boolean updateUser(User user, String role, Long departmentId) {
+        System.out.println("Сервис вызвал для обновления");
+
+        if (user == null || user.getId() == null) {
+            return false; // Проверяем, что пользователь и его ID не null
+        }
+
+        // Обновляем активность и одобрение
+        user.setActive(true);
+        user.setApproved(true);
+
+        // Обновляем роли пользователя
+        user.getRoles().clear();
+        if (role.equals("ROLE_USER")) {
+            user.getRoles().add(Role.ROLE_USER);
+        } else if (role.equals("ROLE_DIRECTOR")) {
+            user.getRoles().add(Role.ROLE_DIRECTOR);
+        }
+
+        // Назначаем отдел, если передан departmentId
+        if (departmentId != null) {
+            Department department = departmentRepository.findById(departmentId).orElseThrow(() ->
+                    new RuntimeException("Department with ID " + departmentId + " not found"));
+            user.setDepartment(department);
+        }
+
+        log.info("Updating User with ID: {}", user.getId());
+
+        userRepository.save(user);
+        System.out.println("Пользователь обновлен");
+
+        return true;
     }
 
+
+    public List<User> list() {
+        return userRepository.findByApproved(true);
+    }
+
+
     public List<User> listForAdmin() {
-        return userRepository.findAll().stream()
+        return userRepository.findByApproved(true).stream()
                 .filter(user -> user.getRoles().stream()
                         .noneMatch(role -> role.getAuthority().equals("ROLE_ADMIN")))
                 .collect(Collectors.toList());
     }
+
 
     public List<User> listForDirector(Principal principal) {
         // Получаем отдел, в котором работает начальник
         User user1 = userRepository.findByEmail(principal.getName());
         Department adminDepartment = user1.getDepartment();
 
-        return userRepository.findAll().stream()
+        return userRepository.findByApproved(true).stream()
                 .filter(user -> user.getRoles().stream()
                         .noneMatch(role -> role.getAuthority().equals("ROLE_ADMIN"))) // Исключаем администраторов
                 .filter(user -> user.getDepartment().equals(adminDepartment)) // Оставляем только сотрудников из того же отдела
@@ -91,21 +110,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-
-
-    /*public void banUser(Long id) {
-        User user = userRepository.findById(id).orElse(null);
-        if (user != null) {
-            if (user.isActive()) {
-                user.setActive(false);
-                log.info("Ban user with id = {}; email: {}", user.getId(), user.getEmail());
-            } else {
-                user.setActive(true);
-                log.info("Unban user with id = {}; email: {}", user.getId(), user.getEmail());
-            }
-        }
-        userRepository.save(user);
-    }*/
 
     public void changeUserRoles(User user, Map<String, String> form) {
         // Extract the new role from the form
@@ -170,24 +174,32 @@ public class UserService {
     }
 
     public List<User> getUsersByAccessLvl(int userAccessLvl) {
-        return userRepository.findUsersByUserAccessLvl(userAccessLvl);
+        return userRepository.findUsersByUserAccessLvl(userAccessLvl).stream()
+                .filter(user -> user.isApproved())
+                .collect(Collectors.toList());
     }
 
+
     public List<User> getUsersByName(String name) {
-        return userRepository.findUsersByName(name);
+        return userRepository.findUsersByName(name).stream()
+                .filter(user -> user.isApproved())
+                .collect(Collectors.toList());
     }
+
 
     public List<User> getUsersByAccessLvlForDirector(int userAccessLvl, Principal principal) {
         User director = userRepository.findByEmail(principal.getName());
         Department directorDepartment = director.getDepartment();
 
         return userRepository.findUsersByUserAccessLvl(userAccessLvl).stream()
+                .filter(user -> user.isApproved())
                 .filter(user -> !user.getRoles().stream()
                         .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"))) // Исключаем администраторов
                 .filter(user -> !user.getId().equals(director.getId())) // Исключаем самого директора
                 .filter(user -> user.getDepartment().equals(directorDepartment)) // Оставляем только сотрудников из того же отдела
                 .collect(Collectors.toList());
     }
+
 
 
     public List<User> getUsersByNameForDirector(String name, Principal principal) {
@@ -195,12 +207,14 @@ public class UserService {
         Department directorDepartment = director.getDepartment();
 
         return userRepository.findUsersByName(name).stream()
+                .filter(user -> user.isApproved())
                 .filter(user -> !user.getRoles().stream()
                         .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"))) // Исключаем администраторов
                 .filter(user -> !user.getId().equals(director.getId())) // Исключаем самого директора
                 .filter(user -> user.getDepartment().equals(directorDepartment)) // Оставляем только сотрудников из того же отдела
                 .collect(Collectors.toList());
     }
+
 
 
     public List<User> findDirectorsWithoutDepartment(){
@@ -229,5 +243,20 @@ public class UserService {
 
     public void updateUser(User user) {
         userRepository.save(user); // Сохраняем пользователя с обновленными ролями
+    }
+
+    public List<User> getUsersWithApprovalStatus(boolean approved) {
+        return userRepository.findByApproved(approved); }
+
+    public User findById(Long id) {
+    return userRepository.findById(id).orElse(null);
+    }
+
+    public boolean deleteUserById(Long id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }

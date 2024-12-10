@@ -19,6 +19,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "AND u.id <> (SELECT d.head_id FROM departments d WHERE d.id = 5)",
             nativeQuery = true)
     List<User> findDirectorsWithoutDepartment();
+    List<User> findByApproved(boolean approved);
 
 
 }
