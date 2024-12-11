@@ -2,7 +2,6 @@ package org.example.acs_v2.models;
 
 import lombok.Data;
 import lombok.ToString;
-import org.example.acs_v2.models.enums.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

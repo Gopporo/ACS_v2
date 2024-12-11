@@ -1,4 +1,4 @@
-package org.example.acs_v2.models.enums;
+package org.example.acs_v2.models;
 
 import org.springframework.security.core.GrantedAuthority;
 

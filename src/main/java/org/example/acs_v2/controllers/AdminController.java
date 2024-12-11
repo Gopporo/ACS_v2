@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
-import org.example.acs_v2.models.enums.Role;
+import org.example.acs_v2.models.Role;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;

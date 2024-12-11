@@ -2,9 +2,7 @@ package org.example.acs_v2.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
-import org.example.acs_v2.models.enums.Role;
 import org.example.acs_v2.repositories.ZoneRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
