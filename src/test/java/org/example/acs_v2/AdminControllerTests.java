@@ -3,12 +3,16 @@ package org.example.acs_v2;
 import org.example.acs_v2.controllers.AdminController;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
+import org.example.acs_v2.repositories.UserRepository;
+import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.services.ZoneService;
+import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.Model;
 
 import java.security.Principal;
@@ -18,6 +22,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 public class AdminControllerTests {
 
     @Mock
@@ -25,6 +30,15 @@ public class AdminControllerTests {
 
     @Mock
     private ZoneService zoneService;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private DepartmentService departmentService;
+
+    @Mock
+    private ModelAttributeHelper modelAttributeHelper;
 
     @Mock
     private Model model;
@@ -35,13 +49,9 @@ public class AdminControllerTests {
     @InjectMocks
     private AdminController adminController;
 
-    public AdminControllerTests() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
     public void testManageUsers() {
-        // Arrange
+
         List<User> mockUsers = new ArrayList<>();
         User user = new User();
         user.setId(1L);
@@ -49,67 +59,52 @@ public class AdminControllerTests {
         mockUsers.add(user);
 
         when(userService.listForAdmin()).thenReturn(mockUsers);
-        when(userService.getUserRole(principal)).thenReturn("ROLE_ADMIN");
-        when(userService.getUserId(principal)).thenReturn(1L);
-
-        // Act
         String viewName = adminController.manageUsers(model, principal);
 
-        // Assert
         assertEquals("admin-users", viewName);
         verify(model).addAttribute("users", mockUsers);
-        verify(model).addAttribute("role", "ROLE_ADMIN");
-        verify(model).addAttribute("userId", 1L);
+        verify(modelAttributeHelper).addUserAttributes(model, principal);
     }
 
     @Test
     public void testDeleteUser() {
-        // Arrange
         Long userId = 1L;
-        when(userService.deleteUserById(userId)).thenReturn(true);
+        doNothing().when(userService).deleteUserById(userId);
 
-        // Act
+
         String viewName = adminController.deleteUser(userId, model);
 
-        // Assert
         assertEquals("redirect:/admin/preregistration", viewName);
         verify(userService).deleteUserById(userId);
     }
 
     @Test
     public void testCreateZone() {
-        // Arrange
         Zone mockZone = new Zone();
         mockZone.setName("Test Zone");
 
         when(zoneService.createZone(mockZone)).thenReturn(true);
 
-        // Act
         String viewName = adminController.createZone(mockZone, model);
 
-        // Assert
         assertEquals("redirect:/admin/zones", viewName);
         verify(zoneService).createZone(mockZone);
     }
 
     @Test
     public void testToggleUserBlock() {
-        // Arrange
         Long userId = 1L;
 
         doNothing().when(userService).toggleUserActiveStatus(userId);
 
-        // Act
         String viewName = adminController.toggleUserBlock(userId);
 
-        // Assert
         assertEquals("redirect:/admin/users", viewName);
         verify(userService).toggleUserActiveStatus(userId);
     }
 
     @Test
     public void testGetUsers() {
-        // Arrange
         int accessLevel = 3;
         List<User> mockUsers = new ArrayList<>();
         User user = new User();
@@ -118,22 +113,15 @@ public class AdminControllerTests {
         mockUsers.add(user);
 
         when(userService.getUsersByAccessLvl(accessLevel)).thenReturn(mockUsers);
-        when(userService.getUserRole(principal)).thenReturn("ROLE_ADMIN");
-        when(userService.getUserId(principal)).thenReturn(1L);
-
-        // Act
         String viewName = adminController.getUsers(accessLevel, model, principal);
 
-        // Assert
         assertEquals("admin-users", viewName);
         verify(model).addAttribute("users", mockUsers);
-        verify(model).addAttribute("role", "ROLE_ADMIN");
-        verify(model).addAttribute("userId", 1L);
+        verify(modelAttributeHelper).addUserAttributes(model, principal);
     }
 
     @Test
     public void testGetZones() {
-        // Arrange
         int accessLevel = 2;
         List<Zone> mockZones = new ArrayList<>();
         Zone zone = new Zone();
@@ -141,16 +129,10 @@ public class AdminControllerTests {
         mockZones.add(zone);
 
         when(zoneService.getZonesByAccessLvl(accessLevel)).thenReturn(mockZones);
-        when(userService.getUserRole(principal)).thenReturn("ROLE_ADMIN");
-        when(userService.getUserId(principal)).thenReturn(1L);
-
-        // Act
         String viewName = adminController.getZones(accessLevel, model, principal);
 
-        // Assert
         assertEquals("admin-zones", viewName);
         verify(model).addAttribute("zones", mockZones);
-        verify(model).addAttribute("role", "ROLE_ADMIN");
-        verify(model).addAttribute("userId", 1L);
+        verify(modelAttributeHelper).addUserAttributes(model, principal);
     }
 }

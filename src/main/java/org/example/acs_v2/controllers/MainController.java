@@ -1,28 +1,38 @@
 package org.example.acs_v2.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.example.acs_v2.services.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.security.Principal;
 
+import static org.example.acs_v2.constants.ViewConstants.INDEX;
+
+/**
+ * Главный контроллер приложения
+ */
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class MainController {
-    @Autowired
-    UserService userService;
 
+    private final ModelAttributeHelper modelAttributeHelper;
+
+    /**
+     * Главная страница
+     */
     @GetMapping("/index")
-    public String product(Principal principal, Model model) {
+    public String index(Principal principal, Model model) {
         if (principal == null) {
-            System.out.println("Пиздец, он(principal) 0");
+            log.warn("Principal is null on index page");
+        } else {
+            log.debug("User {} accessed index page", principal.getName());
         }
-        model.addAttribute("userId", userService.getUserId(principal));
-        model.addAttribute("role", userService.getUserRole(principal));
-        return "index";
-    }
 
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return INDEX;
+    }
 }

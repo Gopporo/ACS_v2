@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,7 +19,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/css/**", "/static/**", "/registration")
+                .antMatchers(
+                        "/resources/**",
+                        "/static/**",
+                        "/css/**",
+                        "/js/**",
+                        "/registration",
+                        "/login"
+                )
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -37,7 +43,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http, BCryptPasswordEncoder bCryptPasswordEncoder, CustomUserDetailsService userDetailService)
+    public AuthenticationManager authenticationManager(HttpSecurity http, BCryptPasswordEncoder bCryptPasswordEncoder, CustomUserDetailsService userDetailsService)
             throws Exception {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
                 .userDetailsService(userDetailsService)
@@ -49,10 +55,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(8);
-    }
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/resources/**", "/static/**", "/css/**", "/js/**");
     }
 
 }

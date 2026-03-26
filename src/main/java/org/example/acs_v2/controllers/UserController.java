@@ -1,9 +1,13 @@
 package org.example.acs_v2.controllers;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.exceptions.UserAlreadyExistsException;
+import org.example.acs_v2.dto.UserRegistrationDto;
+import org.example.acs_v2.dto.UserUpdateDto;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.services.UserService;
-import org.springframework.security.access.AccessDeniedException;
+import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,96 +16,182 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.validation.BindingResult;
+
+import javax.validation.Valid;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.security.Principal;
 
+import static org.example.acs_v2.constants.ModelAttributeConstants.*;
+import static org.example.acs_v2.constants.RedirectConstants.*;
+import static org.example.acs_v2.constants.ViewConstants.*;
+
+/**
+ * Контроллер для управления пользователями (регистрация, логин, профиль)
+ */
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final UserService userService;
+    private final ModelAttributeHelper modelAttributeHelper;
 
+    /**
+     * Проверяет, аутентифицирован ли пользователь
+     */
+    private boolean isAuthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken);
+    }
+
+    /**
+     * Страница входа
+     */
     @GetMapping("/login")
     public String login(Model model, String error, String logout) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
-                && !(authentication instanceof AnonymousAuthenticationToken)) {
-            System.out.println("Перенаправляю на главную страницу");
-            return "redirect:/index";
+        if (isAuthenticated()) {
+            log.debug("User already authenticated, redirecting to index");
+            return REDIRECT_INDEX;
         }
         if (error != null) {
-            model.addAttribute("errorMessage", "Your username and password are invalid.");
+            model.addAttribute(ERROR_MESSAGE, "Неверный email или пароль.");
         }
         if (logout != null) {
-            model.addAttribute("message", "You have been logged out successfully.");
+            model.addAttribute(MESSAGE, "Вы успешно вышли из системы.");
         }
-        return "login";
+
+        return LOGIN;
     }
 
+    /**
+     * Страница регистрации
+     */
     @GetMapping("/registration")
     public String registration() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
-                && !(authentication instanceof AnonymousAuthenticationToken)) {
-            System.out.println("Перенаправляю на главную страницу");
-            return "redirect:/index";
+        if (isAuthenticated()) {
+            log.debug("User already authenticated, redirecting to index");
+            return REDIRECT_INDEX;
         }
-        return "registration";
+        return REGISTRATION;
     }
 
+    /**
+     * Обработка регистрации нового пользователя
+     */
     @PostMapping("/registration")
-    public String createUser(User user, Model model) {
-        if (!userService.preRegistrationUser(user)) {
-            model.addAttribute("errorMessage", "Пользователь с email: " + user.getEmail() + " уже существует");
-            return "registration";
+    public String createUser(@Valid @ModelAttribute UserRegistrationDto dto,
+                               BindingResult bindingResult,
+                               Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute(ERROR_MESSAGE, bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return REGISTRATION;
         }
-        return "redirect:/login";
+
+        try {
+            User user = new User();
+            user.setEmail(dto.getEmail());
+            user.setPassword(dto.getPassword());
+            user.setName(dto.getName());
+            user.setNumber_phone(dto.getNumber_phone());
+
+            userService.preRegistrationUser(user);
+            log.info("User pre-registered successfully: {}", user.getEmail());
+            return REDIRECT_LOGIN;
+        } catch (UserAlreadyExistsException e) {
+            log.warn("Registration failed: {}", e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, e.getMessage());
+            return REGISTRATION;
+        }
     }
 
+    /**
+     * Информация о пользователе
+     */
     @GetMapping("/user/{user}")
     public String userInfo(@PathVariable("user") User user, Model model, Principal principal) {
-        model.addAttribute("user", user);
-        model.addAttribute("userId", userService.getUserId(principal));
-        model.addAttribute("role", userService.getUserRole(principal));
-        return "user-info";
+        model.addAttribute(USER, user);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return USER_INFO;
     }
 
+    /**
+     * Выход из системы
+     */
     @GetMapping("/logout")
     public String logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
         if (authentication != null) {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
+            log.info("User logged out: {}", authentication.getName());
         }
-        return "redirect:/login?logout";
+        return REDIRECT_LOGIN_LOGOUT;
     }
 
+    /**
+     * Профиль пользователя
+     */
     @GetMapping("/user/profile/{user}")
     public String userProfileInfo(@PathVariable("user") User user, Model model, Principal principal) {
-        model.addAttribute("user", user);
-        model.addAttribute("userId", userService.getUserId(principal));
-        model.addAttribute("role", userService.getUserRole(principal));
-        return "profile";
+        model.addAttribute(USER, user);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return PROFILE;
     }
 
+    /**
+     * Страница редактирования профиля
+     */
     @GetMapping("/user/edit/{id}")
     public String getUserEditPage(@PathVariable Long id, Model model, Principal principal) {
         User user = userService.getById(id);
-        model.addAttribute("user", user);
-        model.addAttribute("userId", userService.getUserId(principal));
-        model.addAttribute("role", userService.getUserRole(principal));
-        return "profile-edit";
+        model.addAttribute(USER, user);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return PROFILE_EDIT;
     }
 
+    /**
+     * Обработка редактирования профиля
+     */
     @PostMapping("/user/edit/{id}")
-    public String editUser(@PathVariable Long id, @ModelAttribute User user, RedirectAttributes redirectAttributes) {
-        try {
-            userService.updateUser(id, user);
-            redirectAttributes.addFlashAttribute("successMessage", "Данные успешно обновлены!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при обновлении данных: " + e.getMessage());
+    public String editUser(@PathVariable Long id,
+                            @Valid @ModelAttribute UserUpdateDto dto,
+                            BindingResult bindingResult,
+                            Principal principal,
+                            Model model,
+                            RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            User user = userService.getById(id);
+            if (user == null) {
+                // пусть дальше отработает глобальный обработчик
+                throw new org.example.acs_v2.exceptions.ResourceNotFoundException("Пользователь", id);
+            }
+            model.addAttribute(USER, user);
+            modelAttributeHelper.addUserAttributes(model, principal);
+            model.addAttribute(ERROR_MESSAGE, bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return PROFILE_EDIT;
         }
-        return "redirect:/logout";
+
+        User user = userService.getById(id);
+        if (user == null) {
+            throw new org.example.acs_v2.exceptions.ResourceNotFoundException("Пользователь", id);
+        }
+
+        try {
+            // Пароль может быть пустым (не меняем) — это уже учитывает UserService.updateUser(...)
+            user.setName(dto.getName());
+            user.setEmail(dto.getEmail());
+            user.setPassword(dto.getPassword());
+
+            userService.updateUser(id, user);
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Данные успешно обновлены!");
+            log.info("User {} profile updated successfully", id);
+        } catch (Exception e) {
+            log.error("Error updating user profile: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, "Ошибка при обновлении данных: " + e.getMessage());
+        }
+        return REDIRECT_LOGOUT;
     }
 
 }

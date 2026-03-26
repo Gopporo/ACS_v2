@@ -1,6 +1,7 @@
 package org.example.acs_v2.models;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,7 +12,8 @@ import java.util.*;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @ToString(exclude = {"department", "managedDepartment"})
 public class User implements UserDetails {
     @Id
@@ -59,6 +61,8 @@ public class User implements UserDetails {
         return roles.contains(Role.ROLE_ADMIN);
     }
     public boolean isDirector() { return roles.contains(Role.ROLE_DIRECTOR); }
+    public boolean isSecurity() { return roles.contains(Role.ROLE_SECURITY); }
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -68,6 +72,11 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return email;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override

@@ -1,9 +1,14 @@
 package org.example.acs_v2.controllers;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.constants.ModelAttributeConstants;
+import org.example.acs_v2.constants.RedirectConstants;
+import org.example.acs_v2.constants.ViewConstants;
+import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.*;
 import org.example.acs_v2.services.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,196 +20,350 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.security.Principal;
 import java.util.List;
 
+import static org.example.acs_v2.constants.AccessLevelConstants.ALL_LEVELS;
+
+/**
+ * Контроллер для управления функциями директора
+ * Обрабатывает операции с пользователями, заявками и отчетами
+ */
 @Controller
+@Slf4j
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ROLE_DIRECTOR')")
 public class DirectorController {
 
-    @Autowired
-    UserService userService;
-    @Autowired
-    DepartmentService departmentService;
-    @Autowired
-    ApplicationService applicationService;
-    @Autowired
-    private ZoneService zoneService;
-    @Autowired
-    ReportService reportService;
+    private final UserService userService;
+    private final DepartmentService departmentService;
+    private final ApplicationService applicationService;
+    private final ZoneService zoneService;
+    private final ReportService reportService;
+    private final ModelAttributeHelper modelAttributeHelper;
 
+    /**
+     * Отображает страницу управления пользователями для директора
+     *
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения списка пользователей
+     */
     @GetMapping("/director/users")
     public String manageUsers(Model model, Principal principal) {
-        List<User> users = userService.listForDirector(principal); // Метод для получения списка пользователей
-        model.addAttribute("users", users);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "director-users";
+        log.debug("Director accessing users management page");
+        List<User> users = userService.listForDirector(principal);
+        model.addAttribute(ModelAttributeConstants.USERS, users);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_USERS;
     }
 
+    /**
+     * Фильтрует пользователей по уровню доступа
+     *
+     * @param userAccessLvl уровень доступа для фильтрации (-1 для всех пользователей)
+     * @param model         модель для передачи данных в представление
+     * @param principal     текущий аутентифицированный пользователь
+     * @return имя представления для отображения отфильтрованного списка пользователей
+     */
     @GetMapping("/director/getUsersByAccessLvl")
     public String getUsers(@RequestParam(required = false) int userAccessLvl, Model model, Principal principal) {
+        log.debug("Filtering users by access level: {}", userAccessLvl);
         List<User> users;
-        if (userAccessLvl == -1) {
+        if (userAccessLvl == ALL_LEVELS) {
             users = userService.listForDirector(principal);
         } else {
             users = userService.getUsersByAccessLvlForDirector(userAccessLvl, principal);
         }
-        model.addAttribute("users", users);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-users";
+        model.addAttribute(ModelAttributeConstants.USERS, users);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_USERS;
     }
 
+    /**
+     * Фильтрует пользователей по имени
+     *
+     * @param name      имя для поиска (если пусто, возвращает всех пользователей)
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения отфильтрованного списка пользователей
+     */
     @GetMapping("/director/getUsersByName")
     public String getUser(@RequestParam(required = false) String name, Model model, Principal principal) {
+        log.debug("Filtering users by name: {}", name);
         List<User> users;
         if (name != null && !name.isEmpty()) {
             users = userService.getUsersByNameForDirector(name, principal);
         } else {
             users = userService.listForDirector(principal);
         }
-        model.addAttribute("users", users);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-users";
+        model.addAttribute(ModelAttributeConstants.USERS, users);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_USERS;
     }
 
+    /**
+     * Отображает страницу редактирования пользователя
+     *
+     * @param userId    ID пользователя для редактирования
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для редактирования пользователя
+     */
     @GetMapping("/director/editUser/{userId}")
-    public String editUserPage(@PathVariable Long userId, Model model,Principal principal) {
-        User user = userService.getById(userId);
-        List<Department> departments = departmentService.list();
-        model.addAttribute("user", user);
-        model.addAttribute("departments", departments);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-edit-user"; // Имя вашего шаблона
+    public String editUserPage(@PathVariable Long userId, Model model, Principal principal) {
+        log.debug("Director accessing edit page for user ID: {}", userId);
+        try {
+            User user = userService.getById(userId);
+            List<Department> departments = departmentService.list();
+            model.addAttribute(ModelAttributeConstants.USER, user);
+            model.addAttribute(ModelAttributeConstants.DEPARTMENTS, departments);
+            modelAttributeHelper.addCommonAttributes(model, principal);
+            return ViewConstants.DIRECTOR_EDIT_USER;
+        } catch (Exception e) {
+            log.error("Error accessing edit page for user ID: {}", userId, e);
+            throw new ResourceNotFoundException("User", userId);
+        }
     }
 
+    /**
+     * Обновляет данные пользователя (уровень доступа и отдел)
+     *
+     * @param userId       ID пользователя
+     * @param accessLevel  новый уровень доступа
+     * @param departmentId ID нового отдела
+     * @return перенаправление на список пользователей
+     */
     @PostMapping("/director/updateUser")
     public String updateUser(@RequestParam Long userId,
                              @RequestParam int accessLevel,
                              @RequestParam Long departmentId) {
-        // Получение пользователя и обновление данных
-        System.out.println("Все хорошо");
-        User user = userService.getById(userId);
-        Department department = departmentService.getDepartmentById(departmentId);
-        user.setUserAccessLvl(accessLevel);
-        user.setDepartment(department);
-        userService.saveUser(user); // Сохранение изменений
-        return "redirect:/director/users"; // Перенаправление на список пользователей
+        log.info("Updating user ID: {} with access level: {} and department ID: {}", userId, accessLevel, departmentId);
+        try {
+            User user = userService.getById(userId);
+            Department department = departmentService.getDepartmentById(departmentId);
+            user.setUserAccessLvl(accessLevel);
+            user.setDepartment(department);
+            userService.saveUser(user);
+            log.info("User ID: {} successfully updated", userId);
+            return RedirectConstants.REDIRECT_DIRECTOR_USERS;
+        } catch (Exception e) {
+            log.error("Error updating user ID: {}", userId, e);
+            throw new ResourceNotFoundException("User or Department", userId);
+        }
     }
 
 
+    /**
+     * Отображает страницу управления заявками
+     *
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения списка заявок
+     */
     @GetMapping("/director/applications")
     public String manageApplications(Model model, Principal principal) {
-        List<Application> applications = applicationService.listOfFreeApplications(); // Метод для получения списка пользователей
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "director-applications";
+        log.debug("Director accessing applications management page");
+        List<Application> applications = applicationService.listOfFreeApplications();
+        model.addAttribute(ModelAttributeConstants.APPLICATIONS, applications);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_APPLICATIONS;
     }
 
+    /**
+     * Отображает страницу добавления новой заявки
+     *
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для добавления заявки
+     */
     @GetMapping("/director/addApplication")
     public String addApplication(Model model, Principal principal) {
-
+        log.debug("Director accessing add application page");
         List<Zone> zones = zoneService.list();
-        model.addAttribute("zones", zones);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "addApplication";
+        model.addAttribute(ModelAttributeConstants.ZONES, zones);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.ADD_APPLICATION;
     }
 
+    /**
+     * Создает новую заявку
+     *
+     * @param zone_id     ID зоны для заявки
+     * @param application объект заявки
+     * @param model       модель для передачи данных в представление
+     * @return перенаправление на список заявок или страницу с ошибкой
+     */
     @PostMapping("/director/addApplication")
     public String addApplication(@RequestParam Long zone_id, Application application, Model model) {
-
-        if (!applicationService.createApplication(zone_id, application)) {
-            model.addAttribute("errorMessage", "Зона: " + application.getName() + " уже существует");
-            return "addZone";
+        log.info("Creating new application for zone ID: {}", zone_id);
+        try {
+            applicationService.createApplication(zone_id, application);
+            log.info("Application created successfully for zone ID: {}", zone_id);
+            return RedirectConstants.REDIRECT_DIRECTOR_APPLICATIONS;
+        } catch (ResourceNotFoundException e) {
+            log.error("Zone not found with ID: {}", zone_id, e);
+            model.addAttribute(ModelAttributeConstants.ERROR_MESSAGE, "Зона не найдена");
+            return ViewConstants.ADD_APPLICATION;
+        } catch (Exception e) {
+            log.error("Error creating application for zone ID: {}", zone_id, e);
+            model.addAttribute(ModelAttributeConstants.ERROR_MESSAGE, "Ошибка при создании заявки");
+            return ViewConstants.ADD_APPLICATION;
         }
-
-        return "redirect:/director/applications";
     }
 
+    /**
+     * Отображает страницу редактирования заявки
+     *
+     * @param id        ID заявки для редактирования
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для редактирования заявки
+     */
     @GetMapping("/director/editApplication/{id}")
     public String editApplication(@PathVariable Long id, Model model, Principal principal) {
-        Application application = applicationService.getById(id);
-        List<Zone> zones = zoneService.list();
-        model.addAttribute("application", application);
-        model.addAttribute("zones", zones);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-edit-application"; // Имя вашего шаблона
+        log.debug("Director accessing edit page for application ID: {}", id);
+        try {
+            Application application = applicationService.getById(id);
+            List<Zone> zones = zoneService.list();
+            model.addAttribute(ModelAttributeConstants.APPLICATION, application);
+            model.addAttribute(ModelAttributeConstants.ZONES, zones);
+            modelAttributeHelper.addCommonAttributes(model, principal);
+            return ViewConstants.DIRECTOR_EDIT_APPLICATION;
+        } catch (Exception e) {
+            log.error("Error accessing edit page for application ID: {}", id, e);
+            throw new ResourceNotFoundException("Application", id);
+        }
     }
 
 
+    /**
+     * Обновляет данные заявки
+     *
+     * @param applicationId ID заявки
+     * @param name          новое имя заявки
+     * @param disc          новое описание заявки
+     * @param zoneId        ID новой зоны
+     * @return перенаправление на список заявок
+     */
     @PostMapping("/director/updateApplication")
     public String updateApplication(@RequestParam Long applicationId,
                                     @RequestParam String name,
                                     @RequestParam String disc,
                                     @RequestParam Long zoneId) {
-        // Получение заявки и обновление данных
-        Application application = applicationService.getById(applicationId);
-        Zone zone = zoneService.getById(zoneId);
-        application.setName(name);
-        application.setDisc(disc);
-        application.setZone(zone);
-        applicationService.updateApplication(application); // Сохранение изменений
-        return "redirect:/director/applications"; // Перенаправление на список заявок
+        log.info("Updating application ID: {} with zone ID: {}", applicationId, zoneId);
+        try {
+            Application application = applicationService.getById(applicationId);
+            Zone zone = zoneService.getById(zoneId);
+            application.setName(name);
+            application.setDisc(disc);
+            application.setZone(zone);
+            applicationService.updateApplication(application);
+            log.info("Application ID: {} successfully updated", applicationId);
+            return RedirectConstants.REDIRECT_DIRECTOR_APPLICATIONS;
+        } catch (Exception e) {
+            log.error("Error updating application ID: {}", applicationId, e);
+            throw new ResourceNotFoundException("Application or Zone", applicationId);
+        }
     }
 
+    /**
+     * Фильтрует заявки по уровню доступа
+     *
+     * @param accessLvl уровень доступа для фильтрации (-1 для всех заявок)
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения отфильтрованного списка заявок
+     */
     @GetMapping("/director/getApplicationsByAccessLvl")
     public String getApplications(@RequestParam(required = false) int accessLvl, Model model, Principal principal) {
+        log.debug("Filtering applications by access level: {}", accessLvl);
         List<Application> applications;
-        if (accessLvl == -1) {
+        if (accessLvl == ALL_LEVELS) {
             applications = applicationService.listOfFreeApplications();
         } else {
             applications = applicationService.getApplicationsByAccessLvl(accessLvl);
         }
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-applications";
+        model.addAttribute(ModelAttributeConstants.APPLICATIONS, applications);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_APPLICATIONS;
     }
 
+    /**
+     * Фильтрует заявки по имени
+     *
+     * @param name      имя для поиска (если пусто, возвращает все заявки)
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения отфильтрованного списка заявок
+     */
     @GetMapping("/director/getApplicationsByName")
     public String getApplication(@RequestParam(required = false) String name, Model model, Principal principal) {
+        log.debug("Filtering applications by name: {}", name);
         List<Application> applications;
         if (name != null && !name.isEmpty()) {
             applications = applicationService.getApplicationsByName(name);
         } else {
             applications = applicationService.listOfFreeApplications();
         }
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-applications";
+        model.addAttribute(ModelAttributeConstants.APPLICATIONS, applications);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_APPLICATIONS;
     }
 
+    /**
+     * Отображает страницу управления отчетами
+     *
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения списка отчетов
+     */
     @GetMapping("/director/reports")
     public String manageReports(Model model, Principal principal) {
-        List<Report> reports = reportService.list();// Метод для получения списка пользователей
-        model.addAttribute("reports", reports);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "director-reports";
+        log.debug("Director accessing reports management page");
+        List<Report> reports = reportService.list();
+        model.addAttribute(ModelAttributeConstants.REPORTS, reports);
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_REPORTS;
     }
 
+    /**
+     * Отображает детальную информацию об отчете
+     *
+     * @param id        ID отчета
+     * @param model     модель для передачи данных в представление
+     * @param principal текущий аутентифицированный пользователь
+     * @return имя представления для отображения деталей отчета
+     */
     @GetMapping("/director/report-info/{id}")
     public String getReportDetails(@PathVariable Long id, Model model, Principal principal) {
-        Report report = reportService.getById(id); // Метод для получения отчета по его id
-        model.addAttribute("report", report);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "director-report-info"; // Имя шаблона для отображения подробной информации по отчету
+        log.debug("Director accessing report details for ID: {}", id);
+        try {
+            Report report = reportService.getById(id);
+            model.addAttribute(ModelAttributeConstants.REPORT, report);
+            modelAttributeHelper.addCommonAttributes(model, principal);
+            return ViewConstants.DIRECTOR_REPORT_INFO;
+        } catch (Exception e) {
+            log.error("Error accessing report details for ID: {}", id, e);
+            throw new ResourceNotFoundException("Report", id);
+        }
     }
 
 
+    /**
+     * Удаляет заявку
+     *
+     * @param id ID заявки для удаления
+     * @return перенаправление на список заявок
+     */
     @GetMapping("/director/deleteApplication/{id}")
     public String deleteApplication(@PathVariable Long id) {
-        applicationService.deleteApplication(id);
-        return "redirect:/director/applications";
+        log.info("Deleting application ID: {}", id);
+        try {
+            applicationService.deleteApplication(id);
+            log.info("Application ID: {} successfully deleted", id);
+            return RedirectConstants.REDIRECT_DIRECTOR_APPLICATIONS;
+        } catch (Exception e) {
+            log.error("Error deleting application ID: {}", id, e);
+            throw new ResourceNotFoundException("Application", id);
+        }
     }
 
 }

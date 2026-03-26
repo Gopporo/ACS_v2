@@ -1,6 +1,8 @@
 package org.example.acs_v2.controllers;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
@@ -9,7 +11,7 @@ import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.services.ZoneService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,50 +22,61 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+import static org.example.acs_v2.constants.AccessLevelConstants.ALL_LEVELS;
+import static org.example.acs_v2.constants.ModelAttributeConstants.*;
+import static org.example.acs_v2.constants.RedirectConstants.*;
+import static org.example.acs_v2.constants.ViewConstants.*;
+
+/**
+ * Контроллер для функционала администратора
+ */
 @Controller
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+@Slf4j
 public class AdminController {
 
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    UserService userService;
-    @Autowired
-    ZoneService zoneService;
-    @Autowired
-    DepartmentService departmentService;
+    private final UserRepository userRepository;
+    private final UserService userService;
+    private final ZoneService zoneService;
+    private final DepartmentService departmentService;
+    private final ModelAttributeHelper modelAttributeHelper;
 
-
+    /**
+     * Список пользователей для администратора
+     */
     @GetMapping("/admin/users")
     public String manageUsers(Model model, Principal principal) {
-        List<User> users = userService.listForAdmin(); // Метод для получения списка пользователей
-        model.addAttribute("users", users);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "admin-users";
+        List<User> users = userService.listForAdmin();
+        model.addAttribute(USERS, users);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_USERS;
     }
 
+    /**
+     * Страница добавления пользователя
+     */
     @GetMapping("/admin/addUser/{id}")
     public String addUserMethod(@PathVariable Long id, Principal principal, Model model) {
 
         User user = userService.getById(id);
 
         if (user == null) {
-            return "redirect:/admin/users"; // Если пользователь не найден, перенаправляем на страницу администратора
+            log.warn("User with ID {} not found", id);
+            return REDIRECT_ADMIN_USERS;
         }
 
         List<Department> departments = departmentService.list();
-        model.addAttribute("user", user);
-        model.addAttribute("departments", departments);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
+        model.addAttribute(USER, user);
+        model.addAttribute(DEPARTMENTS, departments);
+        modelAttributeHelper.addUserAttributes(model, principal);
 
-        return "addUser";
+        return ADD_USER;
     }
 
-
+    /**
+     * Создание/обновление пользователя
+     */
     @PostMapping("/admin/addUser")
     public String createUser(@RequestParam String role,
                              @RequestParam Long department_id,
@@ -71,237 +84,278 @@ public class AdminController {
                              @RequestParam int userAccessLvl,
                              @RequestParam Long userId,
                              Model model) {
-        User user = userService.findById(userId);
+        try {
+            User user = userService.findById(userId);
 
-        if (user == null) {
-            model.addAttribute("errorMessage", "Пользователь с ID: " + userId + " не найден");
-            return "addUser";
+            if (user == null) {
+                log.warn("User with ID {} not found", userId);
+                model.addAttribute(ERROR_MESSAGE, "Пользователь с ID: " + userId + " не найден");
+                return ADD_USER;
+            }
+
+            user.setPosition(position);
+            user.setUserAccessLvl(userAccessLvl);
+            user.setApproved(true);
+
+            userService.updateUser(user, role, department_id);
+            log.info("User {} updated successfully by admin", userId);
+
+            return REDIRECT_ADMIN_USERS;
+
+        } catch (Exception e) {
+            log.error("Error updating user {}: {}", userId, e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, "Ошибка при обновлении пользователя: " + e.getMessage());
+            return ADD_USER;
         }
-
-        user.setPosition(position);
-        user.setUserAccessLvl(userAccessLvl);
-        user.setApproved(true); // Одобрение пользователя администратором
-
-        if (!userService.updateUser(user, role, department_id)) {
-            model.addAttribute("errorMessage", "Ошибка при обновлении пользователя с email: " + user.getEmail());
-            return "addUser";
-        }
-
-        return "redirect:/admin/users";
     }
 
+    /**
+     * Удаление пользователя
+     */
     @GetMapping("/admin/deleteUser/{id}")
     public String deleteUser(@PathVariable Long id, Model model) {
-        if (!userService.deleteUserById(id)) {
-            model.addAttribute("errorMessage", "Ошибка при удалении пользователя с ID: " + id);
-            return "error"; // Вернуть на страницу ошибки
-            }
-        return "redirect:/admin/preregistration";
+        try {
+            userService.deleteUserById(id);
+            log.info("User {} deleted successfully", id);
+            return REDIRECT_ADMIN_PREREGISTRATION;
+        } catch (ResourceNotFoundException e) {
+            log.error("Error deleting user {}: {}", id, e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, e.getMessage());
+            return ERROR;
+        }
     }
 
+    /**
+     * Фильтрация пользователей по уровню доступа
+     */
     @GetMapping("/admin/getUsersByAccessLvl")
     public String getUsers(@RequestParam(required = false) int userAccessLvl, Model model, Principal principal) {
-        List<User> users;
-        if (userAccessLvl == -1) {
-            users = userService.list();
-        } else {
-            users = userService.getUsersByAccessLvl(userAccessLvl);
-        }
-        model.addAttribute("users", users);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "admin-users";
+        List<User> users = (userAccessLvl == ALL_LEVELS)
+                ? userService.list()
+                : userService.getUsersByAccessLvl(userAccessLvl);
+
+        model.addAttribute(USERS, users);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_USERS;
     }
 
+    /**
+     * Поиск пользователей по имени
+     */
     @GetMapping("/admin/getUsersByName")
     public String getUser(@RequestParam(required = false) String name, Model model, Principal principal) {
-        List<User> users;
-        if (name != null && !name.isEmpty()) {
-            users = userService.getUsersByName(name);
-        } else {
-            users = userService.list();
-        }
-        model.addAttribute("users", users);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "admin-users";
+        List<User> users = (name != null && !name.isEmpty())
+                ? userService.getUsersByName(name)
+                : userService.list();
+
+        model.addAttribute(USERS, users);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_USERS;
     }
 
+    /**
+     * Блокировка/разблокировка пользователя
+     */
     @GetMapping("/admin/userBlock/{id}")
     public String toggleUserBlock(@PathVariable Long id) {
         userService.toggleUserActiveStatus(id);
-        return "redirect:/admin/users"; // Перенаправляем обратно на список пользователей
+        log.info("User {} active status toggled", id);
+        return REDIRECT_ADMIN_USERS;
     }
 
+    /**
+     * Список зон доступа
+     */
     @GetMapping("/admin/zones")
     public String manageZones(Model model, Principal principal) {
         List<Zone> zones = zoneService.list();
-        model.addAttribute("zones", zones);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "admin-zones";
+        model.addAttribute(ZONES, zones);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_ZONES;
     }
 
+    /**
+     * Страница добавления зоны
+     */
     @GetMapping("/admin/addZone")
     public String addZoneMethod(Principal principal, Model model) {
-        System.out.println("Форму для создания зоны вывел");
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "addZone";
+        log.debug("Displaying add zone form");
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADD_ZONE;
     }
 
+    /**
+     * Создание новой зоны
+     */
     @PostMapping("/admin/addZone")
     public String createZone(Zone zone, Model model) {
-        System.out.println("Данные для создания зоны отправил");
-        if (!zoneService.createZone(zone)) {
-            model.addAttribute("errorMessage", "Зона: " + zone.getName() + " уже существует");
-            return "addZone";
+        try {
+            zoneService.createZone(zone);
+            log.info("Zone {} created successfully", zone.getName());
+            return REDIRECT_ADMIN_ZONES;
+        } catch (Exception e) {
+            log.error("Error creating zone {}: {}", zone.getName(), e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, "Зона: " + zone.getName() + " уже существует");
+            return ADD_ZONE;
         }
-        System.out.println("Буду переключать страничку на все зоны");
-        return "redirect:/admin/zones";
     }
 
+    /**
+     * Фильтрация зон по уровню доступа
+     */
     @GetMapping("/getZonesByAccessLvl")
     public String getZones(@RequestParam(required = false) int zoneAccessLvl, Model model, Principal principal) {
-        List<Zone> zones;
-        if (zoneAccessLvl == -1) {
-            zones = zoneService.list();
-        } else {
-            zones = zoneService.getZonesByAccessLvl(zoneAccessLvl);
-        }
-        model.addAttribute("zones", zones);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "admin-zones";
+        List<Zone> zones = (zoneAccessLvl == ALL_LEVELS)
+                ? zoneService.list()
+                : zoneService.getZonesByAccessLvl(zoneAccessLvl);
+
+        model.addAttribute(ZONES, zones);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_ZONES;
     }
 
+    /**
+     * Поиск зон по имени
+     */
     @GetMapping("/getZoneByName")
     public String getZone(@RequestParam(required = false) String name, Model model, Principal principal) {
-        List<Zone> zones;
-        if (name != null && !name.isEmpty()) {
-            zones = zoneService.getZoneByName(name);
-        } else {
-            zones = zoneService.list();
-        }
-        model.addAttribute("zones", zones);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "admin-zones";
+        List<Zone> zones = (name != null && !name.isEmpty())
+                ? zoneService.getZoneByName(name)
+                : zoneService.list();
+
+        model.addAttribute(ZONES, zones);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_ZONES;
     }
 
+    /**
+     * Список департаментов
+     */
     @GetMapping("/admin/departments")
     public String manageDepartments(Model model, Principal principal) {
         List<Department> departments = departmentService.list();
-        model.addAttribute("departments", departments);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "admin-departments";
+        model.addAttribute(DEPARTMENTS, departments);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_DEPARTMENTS;
     }
 
+    /**
+     * Страница добавления департамента
+     */
     @GetMapping("/admin/addDepartment")
     public String addDepartmentMethod(Principal principal, Model model) {
-        System.out.println("Форму для создания зоны вывел");
+        log.debug("Displaying add department form");
         List<User> availableDirectors = userService.findDirectorsWithoutDepartment();
-        model.addAttribute("availableDirectors", availableDirectors);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "addDepartment";
+        model.addAttribute(AVAILABLE_DIRECTORS, availableDirectors);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADD_DEPARTMENT;
     }
 
+    /**
+     * Создание нового департамента
+     */
     @PostMapping("/admin/addDepartment")
     public String createDepartment(@RequestParam Long headId,
                                    @ModelAttribute Department department,
                                    Model model) {
-        System.out.println("Данные для создания отдела отправил");
-        if (headId == null) {
-            model.addAttribute("errorMessage", "Не выбран руководитель!");
-            return "addDepartment";
+        try {
+            if (headId == null) {
+                log.warn("Head ID is null when creating department");
+                model.addAttribute(ERROR_MESSAGE, "Не выбран руководитель!");
+                return ADD_DEPARTMENT;
+            }
+
+            User head = userRepository.findById(headId).orElse(null);
+            if (head == null) {
+                log.warn("Head with ID {} not found", headId);
+                model.addAttribute(ERROR_MESSAGE, "Руководитель с таким ID не найден!");
+                return ADD_DEPARTMENT;
+            }
+
+            department.setHead(head);
+            departmentService.createDepartment(department, headId);
+            log.info("Department {} created successfully", department.getName());
+
+            return REDIRECT_ADMIN_DEPARTMENTS;
+
+        } catch (Exception e) {
+            log.error("Error creating department {}: {}", department.getName(), e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, "Отдел: " + department.getName() + " уже существует");
+            return ADD_DEPARTMENT;
         }
-
-        User head = userRepository.findById(headId).orElse(null);
-        if (head == null) {
-            model.addAttribute("errorMessage", "Руководитель с таким ID не найден!");
-            return "addDepartment";
-        }
-
-        department.setHead(head);  // Устанавливаем руководителя
-
-        if (!departmentService.createDepartment(department, headId)) {
-            model.addAttribute("errorMessage", "Отдел: " + department.getName() + " уже существует");
-            return "addDepartment";
-        }
-
-        return "redirect:/admin/departments";
     }
 
+    /**
+     * Поиск департаментов по имени
+     */
     @GetMapping("/getDepartmentByName")
     public String getDepartment(@RequestParam(required = false) String name, Model model, Principal principal) {
-        List<Department> departments;
-        if (name != null && !name.isEmpty()) {
-            departments = departmentService.getDepartmentByName(name);
-        } else {
-            departments = departmentService.list();
-        }
-        model.addAttribute("departments", departments);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "admin-departments";
+        List<Department> departments = (name != null && !name.isEmpty())
+                ? departmentService.getDepartmentByName(name)
+                : departmentService.list();
+
+        model.addAttribute(DEPARTMENTS, departments);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_DEPARTMENTS;
     }
 
+    /**
+     * Страница изменения роли пользователя
+     */
     @GetMapping("/admin/changeRole/{id}")
     public String changeRole(@PathVariable Long id, Model model, Principal principal) {
-        // Получаем пользователя по ID
         User user = userService.getById(id);
         if (user == null) {
-            return "redirect:/admin/users"; // Если пользователь не найден, перенаправляем на страницу администратора
+            log.warn("User with ID {} not found for role change", id);
+            return REDIRECT_ADMIN_USERS;
         }
 
-        // Передаем роли как список значений из Enum
-        model.addAttribute("user", user);
-        model.addAttribute("roles", Role.values());
-        model.addAttribute("userId", userService.getUserId(principal));
-        model.addAttribute("role", userService.getUserRole(principal));// Список всех ролей из Enum
-        return "admin-changeRole";
+        model.addAttribute(USER, user);
+        model.addAttribute(ROLES, Role.values());
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_CHANGE_ROLE;
     }
 
-
+    /**
+     * Изменение роли пользователя
+     */
     @PostMapping("/admin/changeRole/{id}")
-    public String changeUserRole(@RequestParam("userId") Long userId, @RequestParam Map<String, String> form, RedirectAttributes redirectAttributes) {
-        User user = userService.getById(userId);
-        if (user == null) {
-            return "redirect:/admin/users"; // Если пользователь не найден, перенаправляем на страницу администратора
-        }
-
+    public String changeUserRole(@RequestParam("userId") Long userId,
+                                 @RequestParam Map<String, String> form,
+                                 RedirectAttributes redirectAttributes) {
         try {
-            // Изменяем роль пользователя
-            String roleName = form.get("role"); // Получаем роль, выбранную в форме
-            Role role = Role.valueOf(roleName); // Преобразуем строку в Enum
+            User user = userService.getById(userId);
+            if (user == null) {
+                log.warn("User with ID {} not found", userId);
+                return REDIRECT_ADMIN_USERS;
+            }
 
-            // Очистим текущие роли пользователя и добавим новую
+            String roleName = form.get("role");
+            Role role = Role.valueOf(roleName);
+
             user.getRoles().clear();
-            user.getRoles().add(role); // Устанавливаем новую роль
+            user.getRoles().add(role);
 
-            // Сохраняем изменения
             userService.updateUser(user);
+            log.info("User {} role changed to {}", userId, roleName);
 
-            redirectAttributes.addFlashAttribute("successMessage", "Роль пользователя обновлена!");
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Роль пользователя обновлена!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при обновлении роли: " + e.getMessage());
+            log.error("Error changing user role: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, "Ошибка при обновлении роли: " + e.getMessage());
         }
 
-        return "redirect:/admin/users"; // Перенаправляем на страницу администратора
+        return REDIRECT_ADMIN_USERS;
     }
 
+    /**
+     * Список пользователей, ожидающих одобрения
+     */
     @GetMapping("/admin/preregistration")
-    public String getPendingUsers(Model model,Principal principal) {
+    public String getPendingUsers(Model model, Principal principal) {
         List<User> pendingUsers = userService.getUsersWithApprovalStatus(false);
-        model.addAttribute("users", pendingUsers);
-        model.addAttribute("userId", userService.getUserId(principal));
-        model.addAttribute("role", userService.getUserRole(principal));
-        return "admin-preregistration"; // Имя шаблона, который вы указали
+        model.addAttribute(USERS, pendingUsers);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_PREREGISTRATION;
     }
 }

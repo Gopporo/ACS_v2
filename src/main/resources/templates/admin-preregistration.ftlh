@@ -83,7 +83,7 @@
                             <div class="card-body">
                                 <h4>${user.name}</h4>
                                 <br>
-                                <p class="card-text">Почта: ${user.number_phone}</p>
+                                <p class="card-text">Почта: ${user.email}</p>
                                 <br>
                                 <p class="card-text">Номер телефона: ${user.number_phone}</p>
                                 <div class="d-flex justify-content-between align-items-center">

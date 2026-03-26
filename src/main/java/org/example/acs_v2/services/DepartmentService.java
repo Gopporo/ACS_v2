@@ -2,34 +2,41 @@ package org.example.acs_v2.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.repositories.DepartmentRepository;
 import org.example.acs_v2.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-
+/**
+ * Сервис для управления отделами
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class DepartmentService {
-    @Autowired
     private final DepartmentRepository departmentRepository;
-    @Autowired
     private final UserRepository userRepository;
 
+    /**
+     * Создает новый отдел с назначением главы
+     *
+     * @param department отдел для создания
+     * @param headId     ID главы отдела
+     * @return true если отдел создан, false если отдел с таким именем уже существует
+     */
     public boolean createDepartment(Department department, Long headId) {
-        System.out.println("Сервис для создания отдела вызвал");
+        log.debug("Creating new department with name: {}", department.getName());
         String departmentName = department.getName();
 
         // Проверяем, существует ли отдел с таким именем
         if (departmentRepository.findByName(departmentName) != null) {
+            log.warn("Department with name '{}' already exists", departmentName);
             return false;
         }
-        System.out.println("Название проверил");
+        log.debug("Department name '{}' is available", departmentName);
 
         // Сохраняем отдел
         log.info("Saving new Department with name: {}", departmentName);
@@ -38,7 +45,7 @@ public class DepartmentService {
         // Назначаем главу отдела
         if (headId != null) {
             User head = userRepository.findById(headId).orElseThrow(() ->
-                    new RuntimeException("User with ID " + headId + " not found"));
+                    new ResourceNotFoundException("User", headId));
 
             // Устанавливаем связь
             head.setDepartment(department);
@@ -47,23 +54,46 @@ public class DepartmentService {
             // Сохраняем изменения
             userRepository.save(head);
             departmentRepository.save(department);
+            log.info("Department '{}' created with head user ID: {}", departmentName, headId);
+        } else {
+            log.info("Department '{}' created without head", departmentName);
         }
 
-        System.out.println("Отдел и глава отдела сохранены");
         return true;
     }
 
+    /**
+     * Получает список всех отделов
+     *
+     * @return список отделов
+     */
     public List<Department> list() {
+        log.debug("Getting all departments");
         return departmentRepository.findAll();
     }
 
+    /**
+     * Получает отделы по имени
+     *
+     * @param name имя отдела для поиска
+     * @return список отделов с указанным именем
+     */
     public List<Department> getDepartmentByName(String name) {
+        log.debug("Getting departments by name: {}", name);
         return departmentRepository.findDepartmentsByName(name);
     }
 
+    /**
+     * Получает отдел по ID
+     *
+     * @param departmentId ID отдела
+     * @return отдел
+     * @throws ResourceNotFoundException если отдел не найден
+     */
     public Department getDepartmentById(Long departmentId) {
+        log.debug("Getting department by ID: {}", departmentId);
         return departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new NoSuchElementException("Department not found with id " + departmentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Department", departmentId));
     }
 
 }

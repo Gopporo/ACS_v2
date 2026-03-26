@@ -2,261 +2,399 @@ package org.example.acs_v2.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.exceptions.ResourceNotFoundException;
+import org.example.acs_v2.exceptions.UserAlreadyExistsException;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Role;
 import org.example.acs_v2.repositories.DepartmentRepository;
 import org.example.acs_v2.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.acs_v2.utils.UserFilterHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Сервис для управления пользователями
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
-    @Autowired
-    DepartmentRepository departmentRepository;
-    @Autowired
+
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserFilterHelper userFilterHelper;
 
-    public User getByEmail(String email) { return userRepository.findByEmail(email); }
+    /**
+     * Получает пользователя по email
+     *
+     * @param email email пользователя
+     * @return пользователь или null
+     */
+    public User getByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 
+    /**
+     * Сохраняет пользователя
+     *
+     * @param user пользователь для сохранения
+     */
     public void saveUser(User user) {
+        log.debug("Saving user with ID: {}", user.getId());
         userRepository.save(user);
     }
 
-    public boolean preRegistrationUser(User user) {
-        System.out.println("Сервис для пререгистрации вызвал");
-        String userEmail = user.getEmail();
-        if (userRepository.findByEmail(userEmail) != null)
-            return false;
-        System.out.println("Почту проверил");
-        user.setActive(false);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        System.out.println("Пароль зашифровал");
+    /**
+     * Предварительная регистрация пользователя (без активации)
+     *
+     * @param user пользователь для регистрации
+     * @throws UserAlreadyExistsException если пользователь с таким email уже существует
+     */
+    public void preRegistrationUser(User user) {
+        log.debug("Pre-registering user with email: {}", user.getEmail());
 
-        log.info("Saving new User with email: {}", userEmail);
-
-        userRepository.save(user);
-        System.out.println("Пререгистрация прошла успешно");
-        return true;
-    }
-
-    public boolean updateUser(User user, String role, Long departmentId) {
-        System.out.println("Сервис вызвал для обновления");
-
-        if (user == null || user.getId() == null) {
-            return false; // Проверяем, что пользователь и его ID не null
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            log.warn("User with email {} already exists", user.getEmail());
+            throw new UserAlreadyExistsException(user.getEmail());
         }
 
-        // Обновляем активность и одобрение
+        user.setActive(false);
+        user.setApproved(false);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        log.info("Saving new user with email: {}", user.getEmail());
+        userRepository.save(user);
+        log.info("Pre-registration completed successfully for user: {}", user.getEmail());
+    }
+
+    /**
+     * Обновляет пользователя с назначением роли и департамента
+     *
+     * @param user         пользователь для обновления
+     * @param role         роль для назначения
+     * @param departmentId ID департамента
+     * @throws ResourceNotFoundException если департамент не найден
+     */
+    public void updateUser(User user, String role, Long departmentId) {
+        log.debug("Updating user with ID: {}", user.getId());
+
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException("User or user ID cannot be null");
+        }
+
+        // Активируем и одобряем пользователя
         user.setActive(true);
         user.setApproved(true);
 
-        // Обновляем роли пользователя
-        user.getRoles().clear();
-        if (role.equals("ROLE_USER")) {
-            user.getRoles().add(Role.ROLE_USER);
-        } else if (role.equals("ROLE_DIRECTOR")) {
-            user.getRoles().add(Role.ROLE_DIRECTOR);
-        }
+        // Обновляем роль пользователя
+        updateUserRole(user, role);
 
-        // Назначаем отдел, если передан departmentId
+        // Назначаем отдел
         if (departmentId != null) {
-            Department department = departmentRepository.findById(departmentId).orElseThrow(() ->
-                    new RuntimeException("Department with ID " + departmentId + " not found"));
+            Department department = departmentRepository.findById(departmentId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Department", departmentId));
             user.setDepartment(department);
         }
 
-        log.info("Updating User with ID: {}", user.getId());
-
+        log.info("Updating user with ID: {}", user.getId());
         userRepository.save(user);
-        System.out.println("Пользователь обновлен");
-
-        return true;
+        log.info("User updated successfully");
     }
 
+    /**
+     * Обновляет роль пользователя
+     *
+     * @param user пользователь
+     * @param role название роли
+     */
+    private void updateUserRole(User user, String role) {
+        user.getRoles().clear();
+        try {
+            Role roleEnum = Role.valueOf(role);
+            user.getRoles().add(roleEnum);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid role: {}", role);
+            throw new IllegalArgumentException("Invalid role: " + role);
+        }
+    }
 
+    /**
+     * Получает список всех одобренных пользователей
+     *
+     * @return список пользователей
+     */
     public List<User> list() {
         return userRepository.findByApproved(true);
     }
 
-
+    /**
+     * Получает список пользователей для администратора (исключая других администраторов)
+     *
+     * @return список пользователей
+     */
     public List<User> listForAdmin() {
-        return userRepository.findByApproved(true).stream()
-                .filter(user -> user.getRoles().stream()
-                        .noneMatch(role -> role.getAuthority().equals("ROLE_ADMIN")))
-                .collect(Collectors.toList());
+        List<User> approvedUsers = userRepository.findByApproved(true);
+        return userFilterHelper.excludeAdmins(approvedUsers);
     }
 
-
+    /**
+     * Получает список пользователей для директора (только из его департамента)
+     *
+     * @param principal текущий пользователь
+     * @return список пользователей
+     * @throws ResourceNotFoundException если пользователь не найден
+     */
     public List<User> listForDirector(Principal principal) {
-        // Получаем отдел, в котором работает начальник
-        User user1 = userRepository.findByEmail(principal.getName());
-        Department adminDepartment = user1.getDepartment();
-
-        return userRepository.findByApproved(true).stream()
-                .filter(user -> user.getRoles().stream()
-                        .noneMatch(role -> role.getAuthority().equals("ROLE_ADMIN"))) // Исключаем администраторов
-                .filter(user -> user.getDepartment().equals(adminDepartment)) // Оставляем только сотрудников из того же отдела
-                .filter(user -> !user.getId().equals(user1.getId())) // Исключаем самого начальника
-                .collect(Collectors.toList());
-    }
-
-
-    public void changeUserRoles(User user, Map<String, String> form) {
-        // Extract the new role from the form
-        String newRole = form.get("role");
-
-        // Check if the new role is different from the current role
-        if (user.getRoles().stream().noneMatch(role -> role.name().equals(newRole))) {
-            // Clear existing roles and set the new role
-            user.getRoles().clear();
-            user.getRoles().add(Role.valueOf(newRole));
-            userRepository.save(user);
+        User director = getByEmail(principal.getName());
+        if (director == null) {
+            throw new ResourceNotFoundException("Пользователь", "email", principal.getName());
         }
+
+        Department directorDepartment = director.getDepartment();
+        if (directorDepartment == null) {
+            log.warn("Director {} has no department assigned", director.getEmail());
+            return List.of();
+        }
+
+        List<User> approvedUsers = userRepository.findByApproved(true);
+        return userFilterHelper.filterForDirector(approvedUsers, director, directorDepartment);
     }
 
+    /**
+     * Изменяет роль пользователя (устаревший метод, используйте updateUserRole)
+     *
+     * @param user пользователь
+     * @param role название роли
+     * @deprecated используйте {@link #updateUserRole(User, String)}
+     */
+    @Deprecated
+    public void changeUserRole(User user, String role) {
+        updateUserRole(user, role);
+        userRepository.save(user);
+    }
+
+    /**
+     * Получает роль текущего пользователя
+     *
+     * @param principal текущий пользователь
+     * @return название роли или null
+     */
     public String getUserRole(Principal principal) {
         if (principal == null) {
             log.warn("Principal is null, user is not authenticated");
             return null;
         }
 
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email);
-
+        User user = getByEmail(principal.getName());
         if (user == null) {
-            log.warn("User not found with email: {}", email);
+            log.warn("User not found with email: {}", principal.getName());
             return null;
         }
 
         if (user.getRoles().isEmpty()) {
-            log.warn("User with email: {} has no roles assigned", email);
+            log.warn("User with email: {} has no roles assigned", user.getEmail());
             return null;
         }
 
         String role = user.getRoles().iterator().next().name();
-        log.info("User with email: {} has role: {}", email, role);
+        log.debug("User with email: {} has role: {}", user.getEmail(), role);
         return role;
     }
 
+    /**
+     * Получает пользователя по ID
+     *
+     * @param id ID пользователя
+     * @return пользователь или null
+     */
     public User getById(Long id) {
 
         return userRepository.findById(id).orElse(null);
 
     }
 
+    /**
+     * Получает ID текущего пользователя
+     *
+     * @param principal текущий пользователь
+     * @return ID пользователя или null
+     */
     public Long getUserId(Principal principal) {
         if (principal == null) {
             log.warn("Principal is null, user is not authenticated");
             return null;
         }
 
-        String email = principal.getName();
-        User user = userRepository.findByEmail(email);
-
+        User user = getByEmail(principal.getName());
         if (user == null) {
-            log.warn("User not found with email: {}", email);
+            log.warn("User not found with email: {}", principal.getName());
             return null;
         }
 
-        Long userId = user.getId();
-        log.info("User with email: {} has ID: {}", email, userId);
-        return userId;
+        log.debug("User with email: {} has ID: {}", user.getEmail(), user.getId());
+        return user.getId();
     }
 
+    /**
+     * Получает пользователей по уровню доступа
+     *
+     * @param userAccessLvl уровень доступа
+     * @return список пользователей
+     */
     public List<User> getUsersByAccessLvl(int userAccessLvl) {
-        return userRepository.findUsersByUserAccessLvl(userAccessLvl).stream()
-                .filter(user -> user.isApproved())
-                .collect(Collectors.toList());
+        List<User> users = userRepository.findUsersByUserAccessLvl(userAccessLvl);
+        return userFilterHelper.filterApproved(users);
     }
 
-
+    /**
+     * Получает пользователей по имени
+     *
+     * @param name имя пользователя
+     * @return список пользователей
+     */
     public List<User> getUsersByName(String name) {
-        return userRepository.findUsersByName(name).stream()
-                .filter(user -> user.isApproved())
-                .collect(Collectors.toList());
+        List<User> users = userRepository.findUsersByName(name);
+        return userFilterHelper.filterApproved(users);
     }
 
-
+    /**
+     * Получает пользователей по уровню доступа для директора
+     *
+     * @param userAccessLvl уровень доступа
+     * @param principal     текущий пользователь (директор)
+     * @return список пользователей
+     */
     public List<User> getUsersByAccessLvlForDirector(int userAccessLvl, Principal principal) {
-        User director = userRepository.findByEmail(principal.getName());
-        Department directorDepartment = director.getDepartment();
+        User director = getByEmail(principal.getName());
+        if (director == null) {
+            throw new ResourceNotFoundException("Пользователь", "email", principal.getName());
+        }
 
-        return userRepository.findUsersByUserAccessLvl(userAccessLvl).stream()
-                .filter(user -> user.isApproved())
-                .filter(user -> !user.getRoles().stream()
-                        .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"))) // Исключаем администраторов
-                .filter(user -> !user.getId().equals(director.getId())) // Исключаем самого директора
-                .filter(user -> user.getDepartment().equals(directorDepartment)) // Оставляем только сотрудников из того же отдела
-                .collect(Collectors.toList());
+        Department directorDepartment = director.getDepartment();
+        if (directorDepartment == null) {
+            log.warn("Director {} has no department assigned", director.getEmail());
+            return List.of();
+        }
+
+        List<User> users = userRepository.findUsersByUserAccessLvl(userAccessLvl);
+        return userFilterHelper.filterForDirector(users, director, directorDepartment);
     }
 
-
-
+    /**
+     * Получает пользователей по имени для директора
+     *
+     * @param name      имя пользователя
+     * @param principal текущий пользователь (директор)
+     * @return список пользователей
+     */
     public List<User> getUsersByNameForDirector(String name, Principal principal) {
-        User director = userRepository.findByEmail(principal.getName());
-        Department directorDepartment = director.getDepartment();
+        User director = getByEmail(principal.getName());
+        if (director == null) {
+            throw new ResourceNotFoundException("Пользователь", "email", principal.getName());
+        }
 
-        return userRepository.findUsersByName(name).stream()
-                .filter(user -> user.isApproved())
-                .filter(user -> !user.getRoles().stream()
-                        .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"))) // Исключаем администраторов
-                .filter(user -> !user.getId().equals(director.getId())) // Исключаем самого директора
-                .filter(user -> user.getDepartment().equals(directorDepartment)) // Оставляем только сотрудников из того же отдела
-                .collect(Collectors.toList());
+        Department directorDepartment = director.getDepartment();
+        if (directorDepartment == null) {
+            log.warn("Director {} has no department assigned", director.getEmail());
+            return List.of();
+        }
+
+        List<User> users = userRepository.findUsersByName(name);
+        return userFilterHelper.filterForDirector(users, director, directorDepartment);
     }
 
-
-
-    public List<User> findDirectorsWithoutDepartment(){
+    /**
+     * Находит директоров без назначенного департамента
+     *
+     * @return список директоров
+     */
+    public List<User> findDirectorsWithoutDepartment() {
         return userRepository.findDirectorsWithoutDepartment();
     }
 
+    /**
+     * Переключает статус активности пользователя
+     *
+     * @param userId ID пользователя
+     * @throws ResourceNotFoundException если пользователь не найден
+     */
     public void toggleUserActiveStatus(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь с ID " + userId + " не найден"));
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь", userId));
 
         user.setActive(!user.isActive());
         userRepository.save(user);
+        log.info("User {} active status toggled to: {}", userId, user.isActive());
     }
 
-    public void updateUser(Long id, User user1) {
+    /**
+     * Обновляет данные пользователя (имя, email, пароль)
+     *
+     * @param id          ID пользователя
+     * @param updatedUser обновленные данные
+     * @throws ResourceNotFoundException если пользователь не найден
+     */
+    public void updateUser(Long id, User updatedUser) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь", id));
 
-        user.setName(user1.getName());
-        user.setEmail(user1.getEmail());
-        if (user1.getPassword() != null && !user1.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(user1.getPassword())); // Хеширование пароля
+        user.setName(updatedUser.getName());
+        user.setEmail(updatedUser.getEmail());
+
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
         userRepository.save(user);
+        log.info("User {} updated successfully", id);
     }
 
+    /**
+     * Обновляет пользователя (общий метод)
+     *
+     * @param user пользователь для обновления
+     */
     public void updateUser(User user) {
-        userRepository.save(user); // Сохраняем пользователя с обновленными ролями
+        userRepository.save(user);
+        log.debug("User {} saved", user.getId());
     }
 
+    /**
+     * Получает пользователей по статусу одобрения
+     *
+     * @param approved статус одобрения
+     * @return список пользователей
+     */
     public List<User> getUsersWithApprovalStatus(boolean approved) {
-        return userRepository.findByApproved(approved); }
-
-    public User findById(Long id) {
-    return userRepository.findById(id).orElse(null);
+        return userRepository.findByApproved(approved);
     }
 
-    public boolean deleteUserById(Long id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
+    /**
+     * Находит пользователя по ID
+     *
+     * @param id ID пользователя
+     * @return пользователь или null
+     */
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    /**
+     * Удаляет пользователя по ID
+     *
+     * @param id ID пользователя
+     * @throws ResourceNotFoundException если пользователь не найден
+     */
+    public void deleteUserById(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Пользователь", id);
         }
-        return false;
+        userRepository.deleteById(id);
+        log.info("User {} deleted successfully", id);
     }
 }

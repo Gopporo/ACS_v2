@@ -1,9 +1,11 @@
 package org.example.acs_v2.controllers;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.models.*;
 import org.example.acs_v2.services.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.acs_v2.utils.ModelAttributeHelper;
+import org.example.acs_v2.validators.AccessLevelValidator;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,139 +16,158 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Optional;
 
+import static org.example.acs_v2.constants.AccessLevelConstants.ALL_LEVELS;
+import static org.example.acs_v2.constants.ModelAttributeConstants.*;
+import static org.example.acs_v2.constants.RedirectConstants.*;
+import static org.example.acs_v2.constants.ViewConstants.*;
+
+/**
+ * Контроллер для функционала сотрудников
+ */
 @Controller
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ROLE_USER')")
+@Slf4j
 public class EmployeeController {
 
-    @Autowired
-    UserService userService;
-    @Autowired
-    DepartmentService departmentService;
-    @Autowired
-    ApplicationService applicationService;
-    @Autowired
-    private ZoneService zoneService;
-    @Autowired
-    ReportService reportService;
-
-
+    private final UserService userService;
+    private final ApplicationService applicationService;
+    private final ReportService reportService;
+    private final ModelAttributeHelper modelAttributeHelper;
+    private final AccessLevelValidator accessLevelValidator;
+    /**
+     * Список доступных заявок для сотрудника
+     */
     @GetMapping("/employee/applications")
     public String manageApplications(Model model, Principal principal) {
-        List<Application> applications = applicationService.listOfFreeApplications(); // Метод для получения списка пользователей
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "employee-applications";
+        List<Application> applications = applicationService.listOfFreeApplications();
+        model.addAttribute(APPLICATIONS, applications);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_APPLICATIONS;
     }
 
+    /**
+     * Фильтрация заявок по уровню доступа
+     */
     @GetMapping("/employee/getApplicationsByAccessLvl")
     public String getApplications(@RequestParam(required = false) int accessLvl, Model model, Principal principal) {
-        List<Application> applications;
-        if (accessLvl == -1) {
-            applications = applicationService.listOfFreeApplications();
-        } else {
-            applications = applicationService.getApplicationsByAccessLvl(accessLvl);
-        }
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "employee-applications";
+        List<Application> applications = (accessLvl == ALL_LEVELS)
+                ? applicationService.listOfFreeApplications()
+                : applicationService.getApplicationsByAccessLvl(accessLvl);
+
+        model.addAttribute(APPLICATIONS, applications);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_APPLICATIONS;
     }
 
+    /**
+     * Поиск заявок по имени
+     */
     @GetMapping("/employee/getApplicationsByName")
     public String getApplication(@RequestParam(required = false) String name, Model model, Principal principal) {
-        List<Application> applications;
-        if (name != null && !name.isEmpty()) {
-            applications = applicationService.getApplicationsByName(name);
-        } else {
-            applications = applicationService.listOfFreeApplications();
-        }
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "employee-applications";
+        List<Application> applications = (name != null && !name.isEmpty())
+                ? applicationService.getApplicationsByName(name)
+                : applicationService.listOfFreeApplications();
+
+        model.addAttribute(APPLICATIONS, applications);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_APPLICATIONS;
     }
 
+    /**
+     * Принятие заявки сотрудником
+     */
     @GetMapping("/employee/acceptApplication/{id}")
     public String acceptApplication(@PathVariable Long id, Principal principal, Model model) {
         User user = userService.getByEmail(principal.getName());
         Application application = applicationService.getById(id);
 
-        if (application.getAccessLevel() > user.getUserAccessLvl()) {
-            model.addAttribute("errorMessage", "Уровень доступа заявки выше, чем у вас. Принятие заявки невозможно.");
-            model.addAttribute("applications", applicationService.listOfUserApplications(user.getId()));
-            model.addAttribute("role", userService.getUserRole(principal));
-            model.addAttribute("userId", userService.getUserId(principal));
-            return "employee-applications"; // Остаемся на той же странице
+        try {
+            accessLevelValidator.validateUserCanAcceptApplication(user, application);
+            applicationService.acceptApplication(id, user.getId());
+            log.info("User {} accepted application {}", user.getId(), id);
+            return REDIRECT_EMPLOYEE_APPLICATIONS;
+        } catch (org.example.acs_v2.exceptions.AccessDeniedException e) {
+            log.warn("User {} cannot accept application {}: {}", user.getId(), id, e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, e.getMessage());
+            model.addAttribute(APPLICATIONS, applicationService.listOfFreeApplications());
+            modelAttributeHelper.addUserAttributes(model, principal);
+            return EMPLOYEE_APPLICATIONS;
         }
-
-        applicationService.acceptApplication(id, user.getId());
-        return "redirect:/employee/applications"; // Перенаправляем обратно на список заявок
     }
 
-
-
-
+    /**
+     * Список заявок текущего сотрудника
+     */
     @GetMapping("/employee/applications/my")
     public String manageMyApplications(Model model, Principal principal) {
         User user = userService.getByEmail(principal.getName());
-        List<Application> applications = applicationService.listOfUserApplications(user.getId()); // Метод для получения списка заявок пользователя
-        model.addAttribute("applications", applications);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "employee-my-applications";
+        List<Application> applications = applicationService.listOfUserApplications(user.getId());
+        model.addAttribute(APPLICATIONS, applications);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_MY_APPLICATIONS;
     }
 
+    /**
+     * Отклонение заявки
+     */
     @GetMapping("/employee/declineApplication/{id}")
     public String declineApplication(@PathVariable Long id) {
         applicationService.declineApplication(id);
-        return "redirect:/employee/applications/my"; // Перенаправляем обратно на список заявок
+        log.info("Application {} declined", id);
+        return REDIRECT_EMPLOYEE_MY_APPLICATIONS;
     }
 
-
+    /**
+     * Список отчетов сотрудника
+     */
     @GetMapping("/employee/reports")
     public String manageReports(Model model, Principal principal) {
         User user = userService.getByEmail(principal.getName());
-        List<Report> reports = reportService.listOfUserReports(user.getId()); // Метод для получения списка пользователей
-        model.addAttribute("reports", reports);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-
-        return "employee-reports";
+        List<Report> reports = reportService.listOfUserReports(user.getId());
+        model.addAttribute(REPORTS, reports);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_REPORTS;
     }
 
+    /**
+     * Страница добавления отчета
+     */
     @GetMapping("/employee/addReport/{id}")
     public String addReport(@PathVariable Long id, Model model, Principal principal) {
         Application application = applicationService.getById(id);
-        model.addAttribute("application", application);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "employee-addReport";
+        model.addAttribute(APPLICATION, application);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_ADD_REPORT;
     }
 
+    /**
+     * Создание отчета
+     */
     @PostMapping("/employee/addReport")
-    public String createReport(@RequestParam Long applicationId, Report report, Model model) {
+    public String createReport(@RequestParam Long applicationId, Report report, Model model, Principal principal) {
         try {
             reportService.createReport(applicationId, report);
-            return "redirect:/employee/reports";
+            log.info("Report created for application {}", applicationId);
+            return REDIRECT_EMPLOYEE_REPORTS;
         } catch (Exception e) {
-            model.addAttribute("errorMessage", "Произошла ошибка при создании отчета. Пожалуйста, попробуйте еще раз.");
-            return "employee-addReport";
+            log.error("Error creating report for application {}: {}", applicationId, e.getMessage());
+            model.addAttribute(ERROR_MESSAGE, "Произошла ошибка при создании отчета. Пожалуйста, попробуйте еще раз.");
+            modelAttributeHelper.addUserAttributes(model, principal);
+            return EMPLOYEE_ADD_REPORT;
         }
     }
 
+    /**
+     * Детальная информация об отчете
+     */
     @GetMapping("/employee/report-info/{id}")
     public String getReportDetails(@PathVariable Long id, Model model, Principal principal) {
-        Report report = reportService.getById(id); // Метод для получения отчета по его id
-        model.addAttribute("report", report);
-        model.addAttribute("role", userService.getUserRole(principal));
-        model.addAttribute("userId", userService.getUserId(principal));
-        return "employee-report-info"; // Имя шаблона для отображения подробной информации по отчету
+        Report report = reportService.getById(id);
+        model.addAttribute(REPORT, report);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return EMPLOYEE_REPORT_INFO;
     }
 
 
