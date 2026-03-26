@@ -23,6 +23,11 @@
                             <a href="/director/applications" class="btn btn-outline-light me-2">Заявки</a>
                             <a href="/director/reports" class="btn btn-outline-light me-2">Отчеты</a>
                             <#break>
+                        <#case "ROLE_SECURITY">
+                            <a href="/security/workers" class="btn btn-outline-light me-2">Сотрудники</a>
+                            <a href="/security/doors" class="btn btn-outline-light me-2">Двери</a>
+                            <a href="/security/accessAttempts" class="btn btn-outline-light me-2">События доступа</a>
+                            <#break>
                         <#case "ROLE_ADMIN">
                             <a href="/admin/preregistration" class="btn btn-outline-light me-2">Запросы на регистрацию</a>
                             <a href="/admin/users" class="btn btn-outline-light me-2">Пользователи</a>

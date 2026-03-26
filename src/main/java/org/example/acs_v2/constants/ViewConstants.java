@@ -34,6 +34,17 @@ public final class ViewConstants {
     public static final String EMPLOYEE_ADD_REPORT = "employee-addReport";
     public static final String EMPLOYEE_REPORT_INFO = "employee-report-info";
 
+    // Security views
+    public static final String SECURITY_WORKERS = "security-workers";
+    public static final String SECURITY_WORKER_ADD = "security-worker-add";
+    public static final String SECURITY_WORKER_EDIT = "security-worker-edit";
+
+    public static final String SECURITY_DOORS = "security-doors";
+    public static final String SECURITY_DOOR_ADD = "security-door-add";
+    public static final String SECURITY_DOOR_EDIT = "security-door-edit";
+
+    public static final String SECURITY_ACCESS_ATTEMPTS = "security-access-attempts";
+
     // Common views
     public static final String INDEX = "index";
     public static final String LOGIN = "login";
