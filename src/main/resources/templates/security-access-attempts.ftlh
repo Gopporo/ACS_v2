@@ -29,7 +29,7 @@
             <tr>
                 <th>Дата</th>
                 <th>Время</th>
-                <th>Дверь</th>
+                <th>Зона</th>
                 <th>Сотрудник</th>
                 <th>Уровень доступа</th>
                 <th>Результат</th>
@@ -42,7 +42,7 @@
                     <td>${attempt.time}</td>
                     <td>${attempt.doorName}</td>
                     <td>${attempt.fullName}</td>
-                    <td>${attempt.accessLevel}</td>
+                    <td>${attempt.accessLevel?string?replace("LEVEL_", "Уровень ")}</td>
                     <td>
                         <#if attempt.success>
                             <span class="text-success">Доступ получен</span>

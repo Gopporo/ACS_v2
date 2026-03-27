@@ -114,7 +114,7 @@
                                 <br>
                                 <p class="card-text">Описание зоны: ${zone.disc}</p>
                                 <br>
-                                <p class="card-text">Уровень доступа зоны: ${zone.zoneAccessLvl}</p>
+                                <p class="card-text">Уровень доступа зоны: ${zone.zoneAccessLvl?string?replace("LEVEL_", "Уровень ")}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group">
                                         <a href="/admin/zones" class="btn btn-dark">Удалить</a>

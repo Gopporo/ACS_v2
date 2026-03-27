@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Добавить дверь (Security)</title>
+    <title>Добавить зону (Security)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="h-100">
@@ -12,13 +12,13 @@
 </header>
 
 <main class="container py-4" style="max-width: 700px;">
-    <h1 class="h3 mb-3">Добавление двери</h1>
+    <h1 class="h3 mb-3">Добавление зоны доступа</h1>
 
     <form action="/security/doors/add" method="post">
         <input type="hidden" name="_csrf" value="${_csrf.token}">
 
         <div class="mb-3">
-            <label class="form-label">Название двери</label>
+            <label class="form-label">Название зоны</label>
             <input type="text" class="form-control" name="name" value="${door.name!''}" required>
         </div>
 

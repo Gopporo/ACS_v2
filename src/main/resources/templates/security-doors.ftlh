@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Двери (Security)</title>
+    <title>Зоны (Security)</title>
     <link rel="stylesheet" href="/css/filters.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -14,13 +14,13 @@
 
 <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">Двери</h1>
+        <h1 class="h3 mb-0">Зоны доступа</h1>
         <a class="btn btn-dark" href="/security/doors/add">Добавить</a>
     </div>
 
     <form method="get" action="/security/doors" class="row g-2 align-items-end mb-4">
         <div class="col-md-4">
-            <label class="form-label">Уровень доступа двери</label>
+            <label class="form-label">Уровень доступа зоны</label>
             <select name="accessLevel" class="form-select">
                 <option value="" <#if !(accessLevel??) || accessLevel == "">selected</#if>>Все</option>
                 <#list accessLevels as lvl>
@@ -48,7 +48,7 @@
                     <td>${door.name!""}</td>
                     <td>
                         <#if door.zoneAccessLvl??>
-                            ${door.zoneAccessLvl}
+                            ${door.zoneAccessLvl?string?replace("LEVEL_", "Уровень ")}
                         <#else>-</#if>
                     </td>
                     <td class="d-flex gap-2">

@@ -112,7 +112,7 @@
                                 <br>
                                 <p class="card-text">Занимаемая должность: ${user.position}</p>
                                 <br>
-                                <p class="card-text">Уровень доступа: ${user.userAccessLvl}</p>
+                                <p class="card-text">Уровень доступа: ${user.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</p>
                                 <br>
                                 <p class="card-text">Номер телефона: ${user.number_phone}</p>
                                 <div class="d-flex justify-content-between align-items-center">

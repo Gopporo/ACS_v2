@@ -152,7 +152,7 @@ public class DataInitializer implements CommandLineRunner {
         log.info("Seed zones created");
     }
 
-    private void ensureUnknownUser() {
+    /* private void ensureUnknownUser() {
         if (userRepository.findByName("Unknown") != null) {
             return;
         }
@@ -170,7 +170,7 @@ public class DataInitializer implements CommandLineRunner {
         unknown.setRoles(Set.of(Role.ROLE_USER));
         userRepository.save(unknown);
         log.info("Unknown user seeded");
-    }
+    } */
 
     private void ensureAttempts() {
         if (accessAttemptRepository.count() != 0) {

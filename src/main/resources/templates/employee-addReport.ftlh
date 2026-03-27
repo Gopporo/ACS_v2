@@ -18,7 +18,7 @@
         <br>
         Зона выполнения: <b>${application.zone.name}</b>
         <br>
-        Уровень доступа: <b>${application.accessLevel}</b>
+        Уровень доступа: <b>${application.accessLevel?string?replace("LEVEL_", "Уровень ")}</b>
         <br>
         Описание:<b>${application.disc}</b>
         <br>

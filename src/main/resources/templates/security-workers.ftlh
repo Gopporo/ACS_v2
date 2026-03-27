@@ -14,7 +14,7 @@
 
 <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="h3 mb-0">Сотрудники безопасности</h1>
+        <h1 class="h3 mb-0">Сотрудники</h1>
         <a class="btn btn-dark" href="/security/workers/add">Добавить</a>
     </div>
 
@@ -57,7 +57,7 @@
                     <td>${worker.numberPhone!"-"}</td>
                     <td>
                         <#if worker.userAccessLvl??>
-                            ${worker.userAccessLvl}
+                            ${worker.userAccessLvl?string?replace("LEVEL_", "Уровень ")}
                         <#else>-</#if>
                     </td>
                     <td>

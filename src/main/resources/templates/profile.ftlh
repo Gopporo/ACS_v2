@@ -16,7 +16,7 @@
     <div style="text-align: center">
         <h3>${user.name}</h3>
         <br>
-        Отдел: <b>${user.department.name}</b>
+        Отдел: <b>${(user.department.name)!'-'}</b>
         <br>
         Должность: <b>${user.position}</b>
         <br>
@@ -24,7 +24,7 @@
         <br>
         Почта:<b>${user.email}</b>
         <br>
-        Уровень доступа:<b>${user.userAccessLvl}</b>
+        Уровень доступа:<b>${user.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</b>
         <br>
         <br>
         <a class="btn btn-primary" href="/user/edit/${user.id}">Редактировать</a>

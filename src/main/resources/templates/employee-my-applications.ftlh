@@ -81,7 +81,7 @@
                                 <br>
                                 <p class="card-text">Зона доступа: ${apl.zone.name}</p>
                                 <br>
-                                <p class="card-text">Уровень доступа: ${apl.accessLevel}</p>
+                                <p class="card-text">Уровень доступа: ${apl.accessLevel?string?replace("LEVEL_", "Уровень ")}</p>
                                 <br>
                                 <p class="card-text">Описание: ${apl.disc}</p>
                                 <div class="d-flex justify-content-between align-items-center">
