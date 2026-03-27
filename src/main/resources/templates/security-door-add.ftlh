@@ -24,16 +24,27 @@
 
         <div class="mb-3">
             <label class="form-label">Уровень доступа</label>
-            <select class="form-select" name="accessLevel" required>
+            <select class="form-select" name="zoneAccessLvl" required>
                 <#list accessLevels as lvl>
-                    <option value="${lvl}" <#if door.accessLevel?? && door.accessLevel == lvl>selected</#if>>${lvl}</option>
+                    <option value="${lvl}" <#if door.zoneAccessLvl?? && door.zoneAccessLvl == lvl>selected</#if>>${lvl}</option>
                 </#list>
             </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Описание зоны</label>
+            <input type="text" class="form-control" name="disc" value="${door.disc!''}">
         </div>
 
         <button type="submit" class="btn btn-dark">Добавить</button>
         <a class="btn btn-outline-secondary ms-2" href="/security/doors">Назад</a>
     </form>
+
+    <#if errorMessage??>
+        <div class="alert alert-danger mt-3" role="alert">
+            ${errorMessage}
+        </div>
+    </#if>
 </main>
 
 <#include "components/footer.ftl">

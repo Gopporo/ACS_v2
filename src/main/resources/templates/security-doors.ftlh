@@ -47,14 +47,8 @@
                 <tr>
                     <td>${door.name!""}</td>
                     <td>
-                        <#if door.accessLevel??>
-                            <#switch door.accessLevel>
-                                <#case "GUEST">Гость<#break>
-                                <#case "EMPLOYEE">Работник<#break>
-                                <#case "ADMINISTRATION">Администратор<#break>
-                                <#case "UNKNOWN">Неизвестно<#break>
-                                <#default>${door.accessLevel}
-                            </#switch>
+                        <#if door.zoneAccessLvl??>
+                            ${door.zoneAccessLvl}
                         <#else>-</#if>
                     </td>
                     <td class="d-flex gap-2">

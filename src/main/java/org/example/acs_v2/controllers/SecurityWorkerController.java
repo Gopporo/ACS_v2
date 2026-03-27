@@ -34,6 +34,7 @@ public class SecurityWorkerController {
         List<User> workers = userService.list().stream()
                 .filter(u -> u.getFirstName() == null || !"Unknown".equalsIgnoreCase(u.getFirstName()))
                 .filter(u -> accessLevel == null || accessLevel.isBlank() || "-1".equals(accessLevel)
+                        || (accessLevel.matches("\\d+") && u.getUserAccessLvl() != null && u.getUserAccessLvl().name().equalsIgnoreCase("LEVEL_" + accessLevel))
                         || (u.getUserAccessLvl() != null && u.getUserAccessLvl().name().equalsIgnoreCase(accessLevel)))
                 .collect(Collectors.toList());
 
@@ -102,9 +103,12 @@ public class SecurityWorkerController {
     public String deleteWorker(@PathVariable Long id) {
         User worker = userService.getById(id);
         if (worker != null) {
-            // Сначала включаем режим удаления на TCP-сервере, затем удаляем запись
-            tcpFingerprintServer.enableDeleteMode(worker);
-            userService.deleteUserById(id);
+            if (worker.getFingerprintHash() == null || worker.getFingerprintHash().isBlank()) {
+                userService.deleteUserById(id);
+            } else {
+                // Удаление записи из БД произойдет в TCP-сервере после подтверждения ESP.
+                tcpFingerprintServer.enableDeleteMode(worker);
+            }
         }
         return "redirect:/security/workers";
     }

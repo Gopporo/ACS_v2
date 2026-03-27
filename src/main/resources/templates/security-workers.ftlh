@@ -56,14 +56,8 @@
                     </td>
                     <td>${worker.numberPhone!"-"}</td>
                     <td>
-                        <#if worker.accessLevel??>
-                            <#switch worker.accessLevel>
-                                <#case "GUEST">Гость<#break>
-                                <#case "EMPLOYEE">Работник<#break>
-                                <#case "ADMINISTRATION">Администратор<#break>
-                                <#case "UNKNOWN">Неизвестно<#break>
-                                <#default>${worker.accessLevel}
-                            </#switch>
+                        <#if worker.userAccessLvl??>
+                            ${worker.userAccessLvl}
                         <#else>-</#if>
                     </td>
                     <td>

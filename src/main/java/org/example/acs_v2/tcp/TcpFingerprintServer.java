@@ -189,11 +189,7 @@ public class TcpFingerprintServer {
                 }
 
                 // Known fingerprint
-                final String fingerprint = message;
-                User user = userRepository.findAll().stream()
-                        .filter(candidate -> fingerprint.equals(candidate.getFingerprintHash()))
-                        .findFirst()
-                        .orElse(null);
+                User user = userRepository.findByFingerprintHash(message);
                 if (user == null) {
                     out.write("NOT_FOUND\n");
                     out.flush();

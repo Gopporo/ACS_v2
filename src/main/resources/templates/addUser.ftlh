@@ -66,7 +66,13 @@
                 </select>
                 <br>
                 <input name="position" type="text" class="form-control" placeholder="Введите должность" required><br>
-                <input name="userAccessLvl" type="number" class="form-control" placeholder="Введите уровень доступа" min="1" max="5" required><br>
+                <select name="userAccessLvl" class="form-select" required>
+                    <option value="LEVEL_1">Уровень 1</option>
+                    <option value="LEVEL_2">Уровень 2</option>
+                    <option value="LEVEL_3">Уровень 3</option>
+                    <option value="LEVEL_4">Уровень 4</option>
+                    <option value="LEVEL_5">Уровень 5</option>
+                </select><br>
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
                 <button type="submit" class="btn btn-dark">Добавить</button>
             </form>

@@ -6,10 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     User findByEmail(String email);
+    User findByFingerprintHash(String fingerprintHash);
     List<User> findUsersByUserAccessLvl(AccessLevel userAccessLvl);
 
     @Query("SELECT u FROM User u WHERE LOWER(CONCAT(COALESCE(u.lastName, ''), ' ', COALESCE(u.firstName, ''), ' ', COALESCE(u.surname, ''))) LIKE LOWER(CONCAT('%', :name, '%'))")

@@ -27,15 +27,13 @@
 
             <div class="mb-3">
                 <label for="accessLevel" class="form-label">Уровень доступа:</label>
-                <input
-                        type="number"
-                        id="accessLevel"
-                        name="accessLevel"
-                        class="form-control d-inline w-auto"
-                        value="${user.userAccessLvl}"
-                        min="1"
-                        max="5"
-                        required>
+                <select id="accessLevel" name="accessLevel" class="form-select d-inline w-auto" required>
+                    <option value="LEVEL_1" <#if user.userAccessLvl?? && user.userAccessLvl == "LEVEL_1">selected</#if>>Уровень 1</option>
+                    <option value="LEVEL_2" <#if user.userAccessLvl?? && user.userAccessLvl == "LEVEL_2">selected</#if>>Уровень 2</option>
+                    <option value="LEVEL_3" <#if user.userAccessLvl?? && user.userAccessLvl == "LEVEL_3">selected</#if>>Уровень 3</option>
+                    <option value="LEVEL_4" <#if user.userAccessLvl?? && user.userAccessLvl == "LEVEL_4">selected</#if>>Уровень 4</option>
+                    <option value="LEVEL_5" <#if user.userAccessLvl?? && user.userAccessLvl == "LEVEL_5">selected</#if>>Уровень 5</option>
+                </select>
             </div>
 
             <div class="mb-3">

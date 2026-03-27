@@ -36,9 +36,9 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Уровень доступа</label>
-            <select class="form-select" name="accessLevel" required>
+            <select class="form-select" name="userAccessLvl" required>
                 <#list accessLevels as lvl>
-                    <option value="${lvl}" <#if worker.accessLevel?? && worker.accessLevel == lvl>selected</#if>>${lvl}</option>
+                    <option value="${lvl}" <#if worker.userAccessLvl?? && worker.userAccessLvl == lvl>selected</#if>>${lvl}</option>
                 </#list>
             </select>
         </div>

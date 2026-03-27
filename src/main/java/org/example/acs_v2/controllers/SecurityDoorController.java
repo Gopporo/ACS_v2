@@ -30,6 +30,7 @@ public class SecurityDoorController {
     public String getDoors(@RequestParam(required = false) String accessLevel, Model model, Principal principal) {
         List<Zone> doors = zoneService.list().stream()
                 .filter(z -> accessLevel == null || accessLevel.isBlank() || "-1".equals(accessLevel)
+                        || (accessLevel.matches("\\d+") && z.getZoneAccessLvl() != null && z.getZoneAccessLvl().name().equalsIgnoreCase("LEVEL_" + accessLevel))
                         || (z.getZoneAccessLvl() != null && z.getZoneAccessLvl().name().equalsIgnoreCase(accessLevel)))
                 .collect(Collectors.toList());
 
@@ -50,11 +51,17 @@ public class SecurityDoorController {
     }
 
     @PostMapping("/security/doors/add")
-    public String addDoor(@ModelAttribute Zone door) {
+    public String addDoor(@ModelAttribute Zone door, Model model, Principal principal) {
         if (door.getZoneAccessLvl() == null) {
             door.setZoneAccessLvl(AccessLevel.LEVEL_1);
         }
-        zoneService.createZone(door);
+        if (!zoneService.createZone(door)) {
+            model.addAttribute("errorMessage", "Зона с таким названием уже существует");
+            model.addAttribute("door", door);
+            model.addAttribute("accessLevels", AccessLevel.values());
+            modelAttributeHelper.addCommonAttributes(model, principal);
+            return ViewConstants.SECURITY_DOOR_ADD;
+        }
         return "redirect:/security/doors";
     }
 

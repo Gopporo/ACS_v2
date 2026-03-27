@@ -41,6 +41,9 @@ public class EmployeeController {
         if (value == null || value.isBlank() || "-1".equals(value)) {
             return null;
         }
+        if (value.matches("\\d+")) {
+            return AccessLevel.valueOf("LEVEL_" + value);
+        }
         return AccessLevel.valueOf(value.toUpperCase());
     }
     /**

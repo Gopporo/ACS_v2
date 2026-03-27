@@ -98,8 +98,8 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        User user1 = userRepository.findAll().stream().filter(u -> "fingerprintHash1".equals(u.getFingerprintHash())).findFirst().orElse(null);
-        User user2 = userRepository.findAll().stream().filter(u -> "fingerprintHash2".equals(u.getFingerprintHash())).findFirst().orElse(null);
+        User user1 = userRepository.findByFingerprintHash("fingerprintHash1");
+        User user2 = userRepository.findByFingerprintHash("fingerprintHash2");
 
         Zone zone1 = zoneRepository.findAll().stream()
                 .filter(d -> "Серверная".equalsIgnoreCase(d.getName()))

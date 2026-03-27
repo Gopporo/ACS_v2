@@ -81,11 +81,11 @@
 -->
 <div class="filters">
     <button class="filter-btn" data-lvl="-1">все</button>
-    <button class="filter-btn" data-lvl="1">1</button>
-    <button class="filter-btn" data-lvl="2">2</button>
-    <button class="filter-btn" data-lvl="3">3</button>
-    <button class="filter-btn" data-lvl="4">4</button>
-    <button class="filter-btn" data-lvl="5">5</button>
+    <button class="filter-btn" data-lvl="LEVEL_1">1</button>
+    <button class="filter-btn" data-lvl="LEVEL_2">2</button>
+    <button class="filter-btn" data-lvl="LEVEL_3">3</button>
+    <button class="filter-btn" data-lvl="LEVEL_4">4</button>
+    <button class="filter-btn" data-lvl="LEVEL_5">5</button>
 </div>
 
 <!-- Форма для отправки данных -->

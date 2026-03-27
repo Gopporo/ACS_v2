@@ -46,6 +46,9 @@ public class AdminController {
         if (value == null || value.isBlank() || "-1".equals(value)) {
             return null;
         }
+        if (value.matches("\\d+")) {
+            return AccessLevel.valueOf("LEVEL_" + value);
+        }
         return AccessLevel.valueOf(value.toUpperCase());
     }
 
@@ -198,7 +201,10 @@ public class AdminController {
     @PostMapping("/admin/addZone")
     public String createZone(Zone zone, Model model) {
         try {
-            zoneService.createZone(zone);
+            if (!zoneService.createZone(zone)) {
+                model.addAttribute(ERROR_MESSAGE, "Зона: " + zone.getName() + " уже существует");
+                return ADD_ZONE;
+            }
             log.info("Zone {} created successfully", zone.getName());
             return REDIRECT_ADMIN_ZONES;
         } catch (Exception e) {
