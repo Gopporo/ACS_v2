@@ -7,6 +7,7 @@ import org.example.acs_v2.exceptions.UserAlreadyExistsException;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Role;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.DepartmentRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.utils.UserFilterHelper;
@@ -247,7 +248,7 @@ public class UserService {
      * @param userAccessLvl уровень доступа
      * @return список пользователей
      */
-    public List<User> getUsersByAccessLvl(int userAccessLvl) {
+    public List<User> getUsersByAccessLvl(AccessLevel userAccessLvl) {
         List<User> users = userRepository.findUsersByUserAccessLvl(userAccessLvl);
         return userFilterHelper.filterApproved(users);
     }
@@ -270,7 +271,7 @@ public class UserService {
      * @param principal     текущий пользователь (директор)
      * @return список пользователей
      */
-    public List<User> getUsersByAccessLvlForDirector(int userAccessLvl, Principal principal) {
+    public List<User> getUsersByAccessLvlForDirector(AccessLevel userAccessLvl, Principal principal) {
         User director = getByEmail(principal.getName());
         if (director == null) {
             throw new ResourceNotFoundException("Пользователь", "email", principal.getName());

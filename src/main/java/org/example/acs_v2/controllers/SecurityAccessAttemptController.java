@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.dto.AccessAttemptDto;
 import org.example.acs_v2.models.AccessAttempt;
-import org.example.acs_v2.models.Worker;
+import org.example.acs_v2.models.User;
 import org.example.acs_v2.services.AccessAttemptService;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.example.acs_v2.constants.ViewConstants;
@@ -45,12 +45,12 @@ public class SecurityAccessAttemptController {
                 dto.setTime("-");
             }
 
-            dto.setDoorName(attempt.getDoor() != null ? attempt.getDoor().getName() : "-");
+            dto.setDoorName(attempt.getZone() != null ? attempt.getZone().getName() : "-");
 
-            Worker worker = attempt.getWorker();
-            if (worker != null) {
-                dto.setFullName(worker.getFullName());
-                dto.setAccessLevel(worker.getAccessLevel() != null ? worker.getAccessLevel().name() : "-");
+            User user = attempt.getUser();
+            if (user != null) {
+                dto.setFullName(user.getFullName());
+                dto.setAccessLevel(user.getUserAccessLvl() != null ? user.getUserAccessLvl().name() : "-");
             } else {
                 dto.setFullName("-");
                 dto.setAccessLevel("-");

@@ -3,6 +3,7 @@ package org.example.acs_v2.validators;
 import org.example.acs_v2.exceptions.AccessDeniedException;
 import org.example.acs_v2.models.Application;
 import org.example.acs_v2.models.User;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,9 +20,9 @@ public class AccessLevelValidator {
      * @throws AccessDeniedException если уровень доступа недостаточен
      */
     public void validateUserCanAcceptApplication(User user, Application application) {
-        if (application.getAccessLevel() > user.getUserAccessLvl()) {
+        if (user.getUserAccessLvl().getRank() < application.getAccessLevel().getRank()) {
             throw new AccessDeniedException(
-                    String.format("Уровень доступа заявки (%d) выше, чем у пользователя (%d). Принятие заявки невозможно.",
+                    String.format("Уровень доступа заявки (%s) выше, чем у пользователя (%s). Принятие заявки невозможно.",
                             application.getAccessLevel(), user.getUserAccessLvl())
             );
         }
@@ -34,7 +35,7 @@ public class AccessLevelValidator {
      * @param zoneAccessLevel требуемый уровень доступа зоны
      * @return true если доступ разрешен
      */
-    public boolean hasAccessToZone(int userAccessLevel, int zoneAccessLevel) {
-        return userAccessLevel >= zoneAccessLevel;
+    public boolean hasAccessToZone(AccessLevel userAccessLevel, AccessLevel zoneAccessLevel) {
+        return userAccessLevel.getRank() >= zoneAccessLevel.getRank();
     }
 }

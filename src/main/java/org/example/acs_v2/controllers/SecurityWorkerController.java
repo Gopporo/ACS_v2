@@ -3,10 +3,10 @@ package org.example.acs_v2.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
-import org.example.acs_v2.models.Worker;
+import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.models.enums.Status;
-import org.example.acs_v2.services.WorkerService;
+import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.tcp.TcpFingerprintServer;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.example.acs_v2.constants.ViewConstants;
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -24,15 +25,17 @@ import java.util.List;
 @Slf4j
 public class SecurityWorkerController {
 
-    private final WorkerService workerService;
+    private final UserService userService;
     private final TcpFingerprintServer tcpFingerprintServer;
     private final ModelAttributeHelper modelAttributeHelper;
 
     @GetMapping("/security/workers")
     public String getWorkers(@RequestParam(required = false) String accessLevel, Model model, Principal principal) {
-        List<Worker> workers = (accessLevel == null || accessLevel.isBlank())
-                ? workerService.getAllWorkers()
-                : workerService.getWorkersByAccessLevel(accessLevel);
+        List<User> workers = userService.list().stream()
+                .filter(u -> u.getFirstName() == null || !"Unknown".equalsIgnoreCase(u.getFirstName()))
+                .filter(u -> accessLevel == null || accessLevel.isBlank() || "-1".equals(accessLevel)
+                        || (u.getUserAccessLvl() != null && u.getUserAccessLvl().name().equalsIgnoreCase(accessLevel)))
+                .collect(Collectors.toList());
 
         model.addAttribute("workers", workers);
         model.addAttribute("accessLevels", AccessLevel.values());
@@ -44,7 +47,7 @@ public class SecurityWorkerController {
 
     @GetMapping("/security/workers/add")
     public String showAddWorkerForm(Model model, Principal principal) {
-        Worker worker = new Worker();
+        User worker = new User();
         worker.setStatus(Status.ACTIVE);
         model.addAttribute("worker", worker);
         model.addAttribute("accessLevels", AccessLevel.values());
@@ -54,22 +57,22 @@ public class SecurityWorkerController {
     }
 
     @PostMapping("/security/workers/add")
-    public String addWorker(@ModelAttribute Worker worker, Principal principal) {
+    public String addWorker(@ModelAttribute User worker, Principal principal) {
         worker.setStatus(Status.ACTIVE);
-        if (worker.getAccessLevel() == null) {
-            worker.setAccessLevel(AccessLevel.UNKNOWN);
+        if (worker.getUserAccessLvl() == null) {
+            worker.setUserAccessLvl(AccessLevel.LEVEL_1);
         }
         // fingerprintHash заполняется по TCP в режиме регистрации
         worker.setFingerprintHash(null);
-        workerService.addWorker(worker);
+        userService.saveUser(worker);
         return "redirect:/security/workers/edit/" + worker.getId();
     }
 
     @GetMapping("/security/workers/edit/{id}")
     public String showEditWorkerForm(@PathVariable Long id, Model model, Principal principal) {
-        Worker worker = workerService.getById(id);
+        User worker = userService.getById(id);
         if (worker == null) {
-            throw new ResourceNotFoundException("Worker", id);
+            throw new ResourceNotFoundException("User", id);
         }
         model.addAttribute("worker", worker);
         model.addAttribute("accessLevels", AccessLevel.values());
@@ -78,25 +81,37 @@ public class SecurityWorkerController {
     }
 
     @PostMapping("/security/workers/update/{id}")
-    public String updateWorker(@PathVariable Long id, @ModelAttribute Worker formWorker) {
-        workerService.updateWorker(id, formWorker);
+    public String updateWorker(@PathVariable Long id, @ModelAttribute User formWorker) {
+        User worker = userService.getById(id);
+        if (worker == null) {
+            throw new ResourceNotFoundException("User", id);
+        }
+        worker.setFirstName(formWorker.getFirstName());
+        worker.setLastName(formWorker.getLastName());
+        worker.setSurname(formWorker.getSurname());
+        worker.setNumberPhone(formWorker.getNumberPhone());
+        worker.setUserAccessLvl(formWorker.getUserAccessLvl());
+        if (formWorker.getStatus() != null) {
+            worker.setStatus(formWorker.getStatus());
+        }
+        userService.saveUser(worker);
         return "redirect:/security/workers/edit/" + id;
     }
 
     @GetMapping("/security/workers/delete/{id}")
     public String deleteWorker(@PathVariable Long id) {
-        Worker worker = workerService.getById(id);
+        User worker = userService.getById(id);
         if (worker != null) {
             // Сначала включаем режим удаления на TCP-сервере, затем удаляем запись
             tcpFingerprintServer.enableDeleteMode(worker);
-            workerService.deleteWorker(id);
+            userService.deleteUserById(id);
         }
         return "redirect:/security/workers";
     }
 
     @PostMapping("/security/workers/start-register/{id}")
     public String startFingerprintRegistration(@PathVariable Long id) {
-        Worker worker = workerService.getById(id);
+        User worker = userService.getById(id);
         if (worker == null) {
             return "redirect:/security/workers";
         }

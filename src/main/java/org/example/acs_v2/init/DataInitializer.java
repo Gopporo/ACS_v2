@@ -3,13 +3,13 @@ package org.example.acs_v2.init;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.models.AccessAttempt;
-import org.example.acs_v2.models.Door;
-import org.example.acs_v2.models.Worker;
+import org.example.acs_v2.models.User;
+import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.models.enums.Status;
 import org.example.acs_v2.repositories.AccessAttemptRepository;
-import org.example.acs_v2.repositories.DoorRepository;
-import org.example.acs_v2.repositories.WorkerRepository;
+import org.example.acs_v2.repositories.UserRepository;
+import org.example.acs_v2.repositories.ZoneRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -20,79 +20,77 @@ import java.time.LocalDateTime;
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
 
-    private final WorkerRepository workerRepository;
-    private final DoorRepository doorRepository;
+    private final UserRepository userRepository;
+    private final ZoneRepository zoneRepository;
     private final AccessAttemptRepository accessAttemptRepository;
 
     @Override
     public void run(String... args) {
-        ensureWorkers();
-        ensureDoors();
-        ensureUnknownWorker();
+        ensureUsers();
+        ensureZones();
+        ensureUnknownUser();
         ensureAttempts();
     }
 
-    private void ensureWorkers() {
-        if (workerRepository.count() != 0) {
+    private void ensureUsers() {
+        if (userRepository.count() != 0) {
             return;
         }
 
-        Worker w1 = new Worker();
+        User w1 = new User();
         w1.setFirstName("Иван");
         w1.setLastName("Иванов");
         w1.setSurname("Иванович");
-        w1.setAccessLevel(AccessLevel.ADMINISTRATION);
+        w1.setUserAccessLvl(AccessLevel.LEVEL_4);
         w1.setStatus(Status.ACTIVE);
         w1.setNumberPhone("+71234567890");
         w1.setFingerprintHash("fingerprintHash1");
 
-        Worker w2 = new Worker();
+        User w2 = new User();
         w2.setFirstName("Мария");
         w2.setLastName("Петрова");
         w2.setSurname("Сергеевна");
-        w2.setAccessLevel(AccessLevel.EMPLOYEE);
+        w2.setUserAccessLvl(AccessLevel.LEVEL_2);
         w2.setStatus(Status.ACTIVE);
         w2.setNumberPhone("+79876543210");
         w2.setFingerprintHash("fingerprintHash2");
 
-        workerRepository.save(w1);
-        workerRepository.save(w2);
-        log.info("Seed workers created");
+        userRepository.save(w1);
+        userRepository.save(w2);
+        log.info("Seed users created");
     }
 
-    private void ensureDoors() {
-        if (doorRepository.count() != 0) {
+    private void ensureZones() {
+        if (zoneRepository.count() != 0) {
             return;
         }
 
-        Door d1 = new Door();
+        Zone d1 = new Zone();
         d1.setName("Серверная");
-        d1.setAccessLevel(AccessLevel.ADMINISTRATION);
+        d1.setZoneAccessLvl(AccessLevel.LEVEL_4);
 
-        Door d2 = new Door();
+        Zone d2 = new Zone();
         d2.setName("Кладовка");
-        d2.setAccessLevel(AccessLevel.EMPLOYEE);
+        d2.setZoneAccessLvl(AccessLevel.LEVEL_2);
 
-        doorRepository.save(d1);
-        doorRepository.save(d2);
-        log.info("Seed doors created");
+        zoneRepository.save(d1);
+        zoneRepository.save(d2);
+        log.info("Seed zones created");
     }
 
-    private void ensureUnknownWorker() {
-        if (workerRepository.findByFirstName("Unknown") != null) {
+    private void ensureUnknownUser() {
+        if (userRepository.findByName("Unknown") != null) {
             return;
         }
 
-        Worker unknown = new Worker();
-        unknown.setFirstName("Unknown");
-        unknown.setLastName("");
-        unknown.setSurname("");
-        unknown.setAccessLevel(AccessLevel.UNKNOWN);
+        User unknown = new User();
+        unknown.setName("Unknown");
+        unknown.setUserAccessLvl(AccessLevel.LEVEL_1);
         unknown.setStatus(Status.ACTIVE);
         unknown.setNumberPhone(null);
         unknown.setFingerprintHash(null);
-        workerRepository.save(unknown);
-        log.info("Unknown worker seeded");
+        userRepository.save(unknown);
+        log.info("Unknown user seeded");
     }
 
     private void ensureAttempts() {
@@ -100,32 +98,32 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        Worker worker1 = workerRepository.findByFingerprintHash("fingerprintHash1");
-        Worker worker2 = workerRepository.findByFingerprintHash("fingerprintHash2");
+        User user1 = userRepository.findAll().stream().filter(u -> "fingerprintHash1".equals(u.getFingerprintHash())).findFirst().orElse(null);
+        User user2 = userRepository.findAll().stream().filter(u -> "fingerprintHash2".equals(u.getFingerprintHash())).findFirst().orElse(null);
 
-        Door door1 = doorRepository.findAll().stream()
+        Zone zone1 = zoneRepository.findAll().stream()
                 .filter(d -> "Серверная".equalsIgnoreCase(d.getName()))
                 .findFirst()
-                .orElseGet(() -> doorRepository.findAll().stream().findFirst().orElse(null));
+                .orElseGet(() -> zoneRepository.findAll().stream().findFirst().orElse(null));
 
-        Door door2 = doorRepository.findAll().stream()
+        Zone zone2 = zoneRepository.findAll().stream()
                 .filter(d -> "Кладовка".equalsIgnoreCase(d.getName()))
                 .findFirst()
-                .orElseGet(() -> doorRepository.findAll().stream().findFirst().orElse(null));
+                .orElseGet(() -> zoneRepository.findAll().stream().findFirst().orElse(null));
 
-        if (worker1 != null && door1 != null) {
+        if (user1 != null && zone1 != null) {
             AccessAttempt attempt1 = new AccessAttempt();
-            attempt1.setWorker(worker1);
-            attempt1.setDoor(door1);
+            attempt1.setUser(user1);
+            attempt1.setZone(zone1);
             attempt1.setSuccess(true);
             attempt1.setTimestamp(LocalDateTime.of(2025, 2, 11, 12, 45));
             accessAttemptRepository.save(attempt1);
         }
 
-        if (worker2 != null && door2 != null) {
+        if (user2 != null && zone2 != null) {
             AccessAttempt attempt2 = new AccessAttempt();
-            attempt2.setWorker(worker2);
-            attempt2.setDoor(door2);
+            attempt2.setUser(user2);
+            attempt2.setZone(zone2);
             attempt2.setSuccess(false);
             attempt2.setTimestamp(LocalDateTime.of(2025, 2, 11, 12, 45));
             accessAttemptRepository.save(attempt2);

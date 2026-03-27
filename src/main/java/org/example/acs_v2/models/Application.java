@@ -1,5 +1,7 @@
 package org.example.acs_v2.models;
 
+import org.example.acs_v2.models.enums.AccessLevel;
+
 import javax.persistence.*;
 import lombok.Data;
 
@@ -16,8 +18,9 @@ public class Application{
     @Column(name = "name")
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "access_lvl")
-    private int accessLevel;
+    private AccessLevel accessLevel;
 
     @Column(name = "disc")
     private String disc;

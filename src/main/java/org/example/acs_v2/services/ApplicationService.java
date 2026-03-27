@@ -6,6 +6,7 @@ import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Application;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.ApplicationRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.repositories.ZoneRepository;
@@ -31,7 +32,7 @@ public class ApplicationService {
      * @param accessLvl уровень доступа
      * @return список заявок
      */
-    public List<Application> getApplicationsByAccessLvl(int accessLvl) {
+    public List<Application> getApplicationsByAccessLvl(AccessLevel accessLvl) {
         return applicationRepository.findApplicationsByAccessLevelAndCompletedFalse(accessLvl);
     }
 

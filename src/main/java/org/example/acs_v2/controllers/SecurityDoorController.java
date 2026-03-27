@@ -3,9 +3,9 @@ package org.example.acs_v2.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
-import org.example.acs_v2.models.Door;
+import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
-import org.example.acs_v2.services.DoorService;
+import org.example.acs_v2.services.ZoneService;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.example.acs_v2.constants.ViewConstants;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -22,14 +23,15 @@ import java.util.List;
 @Slf4j
 public class SecurityDoorController {
 
-    private final DoorService doorService;
+    private final ZoneService zoneService;
     private final ModelAttributeHelper modelAttributeHelper;
 
     @GetMapping("/security/doors")
     public String getDoors(@RequestParam(required = false) String accessLevel, Model model, Principal principal) {
-        List<Door> doors = (accessLevel == null || accessLevel.isBlank())
-                ? doorService.getAllDoors()
-                : doorService.getDoorsByAccessLevel(accessLevel);
+        List<Zone> doors = zoneService.list().stream()
+                .filter(z -> accessLevel == null || accessLevel.isBlank() || "-1".equals(accessLevel)
+                        || (z.getZoneAccessLvl() != null && z.getZoneAccessLvl().name().equalsIgnoreCase(accessLevel)))
+                .collect(Collectors.toList());
 
         model.addAttribute("doors", doors);
         model.addAttribute("accessLevels", AccessLevel.values());
@@ -40,7 +42,7 @@ public class SecurityDoorController {
 
     @GetMapping("/security/doors/add")
     public String showAddDoorForm(Model model, Principal principal) {
-        Door door = new Door();
+        Zone door = new Zone();
         model.addAttribute("door", door);
         model.addAttribute("accessLevels", AccessLevel.values());
         modelAttributeHelper.addCommonAttributes(model, principal);
@@ -48,19 +50,19 @@ public class SecurityDoorController {
     }
 
     @PostMapping("/security/doors/add")
-    public String addDoor(@ModelAttribute Door door) {
-        if (door.getAccessLevel() == null) {
-            door.setAccessLevel(AccessLevel.UNKNOWN);
+    public String addDoor(@ModelAttribute Zone door) {
+        if (door.getZoneAccessLvl() == null) {
+            door.setZoneAccessLvl(AccessLevel.LEVEL_1);
         }
-        doorService.addDoor(door);
+        zoneService.createZone(door);
         return "redirect:/security/doors";
     }
 
     @GetMapping("/security/doors/edit/{id}")
     public String showEditDoorForm(@PathVariable Long id, Model model, Principal principal) {
-        Door door = doorService.getById(id);
+        Zone door = zoneService.getById(id);
         if (door == null) {
-            throw new ResourceNotFoundException("Door", id);
+            throw new ResourceNotFoundException("Zone", id);
         }
         model.addAttribute("door", door);
         model.addAttribute("accessLevels", AccessLevel.values());
@@ -69,14 +71,18 @@ public class SecurityDoorController {
     }
 
     @PostMapping("/security/doors/update/{id}")
-    public String updateDoor(@PathVariable Long id, @ModelAttribute Door formDoor) {
-        doorService.updateDoor(id, formDoor);
+    public String updateDoor(@PathVariable Long id, @ModelAttribute Zone formDoor) {
+        Zone zone = zoneService.getById(id);
+        zone.setName(formDoor.getName());
+        zone.setDisc(formDoor.getDisc());
+        zone.setZoneAccessLvl(formDoor.getZoneAccessLvl());
+        zoneService.save(zone);
         return "redirect:/security/doors/edit/" + id;
     }
 
     @GetMapping("/security/doors/delete/{id}")
     public String deleteDoor(@PathVariable Long id) {
-        doorService.deleteDoor(id);
+        zoneService.deleteById(id);
         return "redirect:/security/doors";
     }
 }

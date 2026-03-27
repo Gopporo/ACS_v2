@@ -3,6 +3,7 @@ package org.example.acs_v2.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.models.*;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.services.*;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.example.acs_v2.validators.AccessLevelValidator;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.security.Principal;
 import java.util.List;
 
-import static org.example.acs_v2.constants.AccessLevelConstants.ALL_LEVELS;
 import static org.example.acs_v2.constants.ModelAttributeConstants.*;
 import static org.example.acs_v2.constants.RedirectConstants.*;
 import static org.example.acs_v2.constants.ViewConstants.*;
@@ -36,6 +36,13 @@ public class EmployeeController {
     private final ReportService reportService;
     private final ModelAttributeHelper modelAttributeHelper;
     private final AccessLevelValidator accessLevelValidator;
+
+    private AccessLevel parseAccessLevel(String value) {
+        if (value == null || value.isBlank() || "-1".equals(value)) {
+            return null;
+        }
+        return AccessLevel.valueOf(value.toUpperCase());
+    }
     /**
      * Список доступных заявок для сотрудника
      */
@@ -51,10 +58,11 @@ public class EmployeeController {
      * Фильтрация заявок по уровню доступа
      */
     @GetMapping("/employee/getApplicationsByAccessLvl")
-    public String getApplications(@RequestParam(required = false) int accessLvl, Model model, Principal principal) {
-        List<Application> applications = (accessLvl == ALL_LEVELS)
+    public String getApplications(@RequestParam(required = false) String accessLvl, Model model, Principal principal) {
+        AccessLevel parsedLevel = parseAccessLevel(accessLvl);
+        List<Application> applications = (parsedLevel == null)
                 ? applicationService.listOfFreeApplications()
-                : applicationService.getApplicationsByAccessLvl(accessLvl);
+                : applicationService.getApplicationsByAccessLvl(parsedLevel);
 
         model.addAttribute(APPLICATIONS, applications);
         modelAttributeHelper.addUserAttributes(model, principal);

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Zone;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.ZoneRepository;
 import org.springframework.stereotype.Service;
 
@@ -70,7 +71,7 @@ public class ZoneService {
      * @param zoneAccessLvl уровень доступа зоны
      * @return список зон с указанным уровнем доступа
      */
-    public List<Zone> getZonesByAccessLvl(int zoneAccessLvl) {
+    public List<Zone> getZonesByAccessLvl(AccessLevel zoneAccessLvl) {
         log.debug("Getting zones by access level: {}", zoneAccessLvl);
         return zoneRepository.findZonesByZoneAccessLvl(zoneAccessLvl);
     }
@@ -84,5 +85,13 @@ public class ZoneService {
     public List<Zone> getZoneByName(String name) {
         log.debug("Getting zones by name: {}", name);
         return zoneRepository.findZonesByName(name);
+    }
+
+    public Zone save(Zone zone) {
+        return zoneRepository.save(zone);
+    }
+
+    public void deleteById(Long id) {
+        zoneRepository.deleteById(id);
     }
 }

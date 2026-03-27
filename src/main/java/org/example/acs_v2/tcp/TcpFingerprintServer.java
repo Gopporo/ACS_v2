@@ -3,13 +3,13 @@ package org.example.acs_v2.tcp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.models.AccessAttempt;
-import org.example.acs_v2.models.Door;
-import org.example.acs_v2.models.Worker;
+import org.example.acs_v2.models.User;
+import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.models.enums.Status;
 import org.example.acs_v2.repositories.AccessAttemptRepository;
-import org.example.acs_v2.repositories.DoorRepository;
-import org.example.acs_v2.repositories.WorkerRepository;
+import org.example.acs_v2.repositories.UserRepository;
+import org.example.acs_v2.repositories.ZoneRepository;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -29,15 +29,15 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class TcpFingerprintServer {
 
-    private final WorkerRepository workerRepository;
-    private final DoorRepository doorRepository;
+    private final UserRepository userRepository;
+    private final ZoneRepository zoneRepository;
     private final AccessAttemptRepository attemptRepository;
 
     private final AtomicBoolean registerMode = new AtomicBoolean(false);
     private final AtomicBoolean deleteMode = new AtomicBoolean(false);
 
-    private final AtomicReference<Worker> pendingWorker = new AtomicReference<>(null);
-    private final AtomicReference<Worker> unknownWorker = new AtomicReference<>(null);
+    private final AtomicReference<User> pendingUser = new AtomicReference<>(null);
+    private final AtomicReference<User> unknownUser = new AtomicReference<>(null);
 
     @PostConstruct
     public void init() {
@@ -59,38 +59,27 @@ public class TcpFingerprintServer {
     }
 
     private int accessRank(AccessLevel level) {
-        if (level == null) {
-            return 0;
-        }
-        return switch (level) {
-            case GUEST -> 0;
-            case EMPLOYEE -> 1;
-            case ADMINISTRATION -> 2;
-            case UNKNOWN -> -1; // UNKNOWN должен быть минимальным
-        };
+        return level == null ? 0 : level.getRank();
     }
 
-    private Door resolveDefaultDoor() {
-        Door door = doorRepository.findById(1L).orElse(null);
-        if (door != null) {
-            return door;
+    private Zone resolveDefaultZone() {
+        Zone zone = zoneRepository.findById(1L).orElse(null);
+        if (zone != null) {
+            return zone;
         }
-        return doorRepository.findAll().stream().findFirst().orElse(null);
+        return zoneRepository.findAll().stream().findFirst().orElse(null);
     }
 
-    private Worker ensureUnknownWorker() {
-        Worker unknown = workerRepository.findByFirstName("Unknown");
+    private User ensureUnknownUser() {
+        User unknown = userRepository.findByName("Unknown");
         if (unknown == null) {
-            unknown = new Worker();
-            unknown.setFirstName("Unknown");
-            unknown.setLastName("");
-            unknown.setSurname("");
-            unknown.setAccessLevel(AccessLevel.UNKNOWN);
+            unknown = new User();
+            unknown.setName("Unknown");
+            unknown.setUserAccessLvl(AccessLevel.LEVEL_1);
             unknown.setStatus(Status.ACTIVE);
-            // fingerprintHash неизвестен
-            workerRepository.save(unknown);
+            userRepository.save(unknown);
         }
-        unknownWorker.set(unknown);
+        unknownUser.set(unknown);
         return unknown;
     }
 
@@ -113,12 +102,12 @@ public class TcpFingerprintServer {
 
                 // === Register mode ===
                 if (registerMode.get()) {
-                    Worker worker = pendingWorker.get();
-                    if (worker == null) {
+                    User user = pendingUser.get();
+                    if (user == null) {
                         out.write("ERROR_NO_WORKER\n");
                         out.flush();
                         registerMode.set(false);
-                        pendingWorker.set(null);
+                        pendingUser.set(null);
                         break;
                     }
 
@@ -129,8 +118,8 @@ public class TcpFingerprintServer {
                     log.info("ESP response on registration: {}", response);
 
                     if (response != null && response.matches("\\d+")) {
-                        worker.setFingerprintHash(response);
-                        workerRepository.save(worker);
+                        user.setFingerprintHash(response);
+                        userRepository.save(user);
                         out.write("REGISTERED\n");
                     } else {
                         out.write("ERROR\n");
@@ -138,29 +127,29 @@ public class TcpFingerprintServer {
                     out.flush();
 
                     registerMode.set(false);
-                    pendingWorker.set(null);
+                    pendingUser.set(null);
                     break;
                 }
 
                 // === Delete mode ===
                 if (deleteMode.get()) {
-                    Worker worker = pendingWorker.get();
-                    if (worker == null || worker.getFingerprintHash() == null) {
+                    User user = pendingUser.get();
+                    if (user == null || user.getFingerprintHash() == null) {
                         out.write("ERROR_NO_FINGERPRINT\n");
                         out.flush();
                         deleteMode.set(false);
-                        pendingWorker.set(null);
+                        pendingUser.set(null);
                         break;
                     }
 
-                    out.write("DELETE " + worker.getFingerprintHash() + "\n");
+                    out.write("DELETE " + user.getFingerprintHash() + "\n");
                     out.flush();
 
                     String response = in.readLine();
                     log.info("ESP response on delete: {}", response);
 
                     if ("DELETED".equalsIgnoreCase(response)) {
-                        workerRepository.delete(worker);
+                        userRepository.delete(user);
                         out.write("DELETE_OK\n");
                     } else {
                         out.write("DELETE_ERROR\n");
@@ -168,7 +157,7 @@ public class TcpFingerprintServer {
                     out.flush();
 
                     deleteMode.set(false);
-                    pendingWorker.set(null);
+                    pendingUser.set(null);
                     break;
                 }
 
@@ -179,9 +168,9 @@ public class TcpFingerprintServer {
 
                 // "Unknown" fingerprint - always deny and save as attempt
                 if ("Unknown".equalsIgnoreCase(message)) {
-                    Worker unknown = ensureUnknownWorker();
-                    Door door = resolveDefaultDoor();
-                    if (door == null) {
+                    User unknown = ensureUnknownUser();
+                    Zone zone = resolveDefaultZone();
+                    if (zone == null) {
                         out.write("DOOR_NOT_FOUND\n");
                         out.flush();
                         break;
@@ -189,8 +178,8 @@ public class TcpFingerprintServer {
 
                     AccessAttempt attempt = new AccessAttempt();
                     attempt.setTimestamp(LocalDateTime.now());
-                    attempt.setDoor(door);
-                    attempt.setWorker(unknown);
+                    attempt.setZone(zone);
+                    attempt.setUser(unknown);
                     attempt.setSuccess(false);
                     attemptRepository.save(attempt);
 
@@ -200,26 +189,30 @@ public class TcpFingerprintServer {
                 }
 
                 // Known fingerprint
-                Worker worker = workerRepository.findByFingerprintHash(message);
-                if (worker == null) {
+                final String fingerprint = message;
+                User user = userRepository.findAll().stream()
+                        .filter(candidate -> fingerprint.equals(candidate.getFingerprintHash()))
+                        .findFirst()
+                        .orElse(null);
+                if (user == null) {
                     out.write("NOT_FOUND\n");
                     out.flush();
                     break;
                 }
 
-                Door door = resolveDefaultDoor();
-                if (door == null) {
+                Zone zone = resolveDefaultZone();
+                if (zone == null) {
                     out.write("DOOR_NOT_FOUND\n");
                     out.flush();
                     break;
                 }
 
-                boolean granted = accessRank(worker.getAccessLevel()) >= accessRank(door.getAccessLevel());
+                boolean granted = accessRank(user.getUserAccessLvl()) >= accessRank(zone.getZoneAccessLvl());
 
                 AccessAttempt attempt = new AccessAttempt();
                 attempt.setTimestamp(LocalDateTime.now());
-                attempt.setWorker(worker);
-                attempt.setDoor(door);
+                attempt.setUser(user);
+                attempt.setZone(zone);
                 attempt.setSuccess(granted);
                 attemptRepository.save(attempt);
 
@@ -237,29 +230,29 @@ public class TcpFingerprintServer {
         }
     }
 
-    public void enableRegisterMode(Worker worker) {
+    public void enableRegisterMode(User user) {
         this.registerMode.set(true);
         this.deleteMode.set(false);
-        this.pendingWorker.set(worker);
-        log.info("Register mode enabled for worker: {}", worker != null ? worker.getFullName() : "null");
+        this.pendingUser.set(user);
+        log.info("Register mode enabled for user: {}", user != null ? user.getFullName() : "null");
     }
 
     public void cancelRegisterMode() {
         this.registerMode.set(false);
-        this.pendingWorker.set(null);
+        this.pendingUser.set(null);
         log.info("Register mode cancelled");
     }
 
-    public void enableDeleteMode(Worker worker) {
+    public void enableDeleteMode(User user) {
         this.deleteMode.set(true);
         this.registerMode.set(false);
-        this.pendingWorker.set(worker);
-        log.info("Delete mode enabled for worker: {}", worker != null ? worker.getFullName() : "null");
+        this.pendingUser.set(user);
+        log.info("Delete mode enabled for user: {}", user != null ? user.getFullName() : "null");
     }
 
     public void cancelDeleteMode() {
         this.deleteMode.set(false);
-        this.pendingWorker.set(null);
+        this.pendingUser.set(null);
         log.info("Delete mode cancelled");
     }
 

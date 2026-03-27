@@ -7,6 +7,7 @@ import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.Role;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;
@@ -22,7 +23,6 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
-import static org.example.acs_v2.constants.AccessLevelConstants.ALL_LEVELS;
 import static org.example.acs_v2.constants.ModelAttributeConstants.*;
 import static org.example.acs_v2.constants.RedirectConstants.*;
 import static org.example.acs_v2.constants.ViewConstants.*;
@@ -41,6 +41,13 @@ public class AdminController {
     private final ZoneService zoneService;
     private final DepartmentService departmentService;
     private final ModelAttributeHelper modelAttributeHelper;
+
+    private AccessLevel parseAccessLevel(String value) {
+        if (value == null || value.isBlank() || "-1".equals(value)) {
+            return null;
+        }
+        return AccessLevel.valueOf(value.toUpperCase());
+    }
 
     /**
      * Список пользователей для администратора
@@ -81,7 +88,7 @@ public class AdminController {
     public String createUser(@RequestParam String role,
                              @RequestParam Long department_id,
                              @RequestParam String position,
-                             @RequestParam int userAccessLvl,
+                             @RequestParam String userAccessLvl,
                              @RequestParam Long userId,
                              Model model) {
         try {
@@ -94,7 +101,7 @@ public class AdminController {
             }
 
             user.setPosition(position);
-            user.setUserAccessLvl(userAccessLvl);
+            user.setUserAccessLvl(parseAccessLevel(userAccessLvl));
             user.setApproved(true);
 
             userService.updateUser(user, role, department_id);
@@ -129,10 +136,11 @@ public class AdminController {
      * Фильтрация пользователей по уровню доступа
      */
     @GetMapping("/admin/getUsersByAccessLvl")
-    public String getUsers(@RequestParam(required = false) int userAccessLvl, Model model, Principal principal) {
-        List<User> users = (userAccessLvl == ALL_LEVELS)
+    public String getUsers(@RequestParam(required = false) String userAccessLvl, Model model, Principal principal) {
+        AccessLevel parsedLevel = parseAccessLevel(userAccessLvl);
+        List<User> users = (parsedLevel == null)
                 ? userService.list()
-                : userService.getUsersByAccessLvl(userAccessLvl);
+                : userService.getUsersByAccessLvl(parsedLevel);
 
         model.addAttribute(USERS, users);
         modelAttributeHelper.addUserAttributes(model, principal);
@@ -204,10 +212,11 @@ public class AdminController {
      * Фильтрация зон по уровню доступа
      */
     @GetMapping("/getZonesByAccessLvl")
-    public String getZones(@RequestParam(required = false) int zoneAccessLvl, Model model, Principal principal) {
-        List<Zone> zones = (zoneAccessLvl == ALL_LEVELS)
+    public String getZones(@RequestParam(required = false) String zoneAccessLvl, Model model, Principal principal) {
+        AccessLevel parsedLevel = parseAccessLevel(zoneAccessLvl);
+        List<Zone> zones = (parsedLevel == null)
                 ? zoneService.list()
-                : zoneService.getZonesByAccessLvl(zoneAccessLvl);
+                : zoneService.getZonesByAccessLvl(parsedLevel);
 
         model.addAttribute(ZONES, zones);
         modelAttributeHelper.addUserAttributes(model, principal);

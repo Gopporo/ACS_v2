@@ -17,10 +17,10 @@ public class AccessAttempt {
     private LocalDateTime timestamp;
 
     @ManyToOne
-    private Worker worker;
+    private User user;
 
     @ManyToOne
-    private Door door;
+    private Zone zone;
 
     private boolean success;
 }

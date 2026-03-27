@@ -7,6 +7,7 @@ import org.example.acs_v2.constants.RedirectConstants;
 import org.example.acs_v2.constants.ViewConstants;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.*;
+import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.services.*;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
 import java.util.List;
-
-import static org.example.acs_v2.constants.AccessLevelConstants.ALL_LEVELS;
 
 /**
  * Контроллер для управления функциями директора
@@ -38,6 +37,13 @@ public class DirectorController {
     private final ZoneService zoneService;
     private final ReportService reportService;
     private final ModelAttributeHelper modelAttributeHelper;
+
+    private AccessLevel parseAccessLevel(String value) {
+        if (value == null || value.isBlank() || "-1".equals(value)) {
+            return null;
+        }
+        return AccessLevel.valueOf(value.toUpperCase());
+    }
 
     /**
      * Отображает страницу управления пользователями для директора
@@ -64,13 +70,14 @@ public class DirectorController {
      * @return имя представления для отображения отфильтрованного списка пользователей
      */
     @GetMapping("/director/getUsersByAccessLvl")
-    public String getUsers(@RequestParam(required = false) int userAccessLvl, Model model, Principal principal) {
+    public String getUsers(@RequestParam(required = false) String userAccessLvl, Model model, Principal principal) {
         log.debug("Filtering users by access level: {}", userAccessLvl);
         List<User> users;
-        if (userAccessLvl == ALL_LEVELS) {
+        AccessLevel parsedLevel = parseAccessLevel(userAccessLvl);
+        if (parsedLevel == null) {
             users = userService.listForDirector(principal);
         } else {
-            users = userService.getUsersByAccessLvlForDirector(userAccessLvl, principal);
+            users = userService.getUsersByAccessLvlForDirector(parsedLevel, principal);
         }
         model.addAttribute(ModelAttributeConstants.USERS, users);
         modelAttributeHelper.addCommonAttributes(model, principal);
@@ -133,13 +140,13 @@ public class DirectorController {
      */
     @PostMapping("/director/updateUser")
     public String updateUser(@RequestParam Long userId,
-                             @RequestParam int accessLevel,
+                             @RequestParam String accessLevel,
                              @RequestParam Long departmentId) {
         log.info("Updating user ID: {} with access level: {} and department ID: {}", userId, accessLevel, departmentId);
         try {
             User user = userService.getById(userId);
             Department department = departmentService.getDepartmentById(departmentId);
-            user.setUserAccessLvl(accessLevel);
+            user.setUserAccessLvl(parseAccessLevel(accessLevel));
             user.setDepartment(department);
             userService.saveUser(user);
             log.info("User ID: {} successfully updated", userId);
@@ -273,13 +280,14 @@ public class DirectorController {
      * @return имя представления для отображения отфильтрованного списка заявок
      */
     @GetMapping("/director/getApplicationsByAccessLvl")
-    public String getApplications(@RequestParam(required = false) int accessLvl, Model model, Principal principal) {
+    public String getApplications(@RequestParam(required = false) String accessLvl, Model model, Principal principal) {
         log.debug("Filtering applications by access level: {}", accessLvl);
         List<Application> applications;
-        if (accessLvl == ALL_LEVELS) {
+        AccessLevel parsedLevel = parseAccessLevel(accessLvl);
+        if (parsedLevel == null) {
             applications = applicationService.listOfFreeApplications();
         } else {
-            applications = applicationService.getApplicationsByAccessLvl(accessLvl);
+            applications = applicationService.getApplicationsByAccessLvl(parsedLevel);
         }
         model.addAttribute(ModelAttributeConstants.APPLICATIONS, applications);
         modelAttributeHelper.addCommonAttributes(model, principal);
