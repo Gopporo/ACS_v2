@@ -101,7 +101,8 @@
                                 <br>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group">
-                                        <a href="/admin/departments" class="btn btn-dark me-2">Удалить</a>
+                                        <a href="/admin/editDepartment/${department.id}" class="btn btn-dark me-2">Редактировать</a>
+                                        <a href="/admin/deleteDepartment/${department.id}" class="btn btn-outline-danger">Удалить</a>
                                     </div>
                                 </div>
                             </div>

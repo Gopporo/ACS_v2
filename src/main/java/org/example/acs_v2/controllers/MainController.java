@@ -24,6 +24,14 @@ public class MainController {
     /**
      * Главная страница
      */
+    @GetMapping("/")
+    public String root() {
+        return "redirect:/index";
+    }
+
+    /**
+     * Главная страница
+     */
     @GetMapping("/index")
     public String index(Principal principal, Model model) {
         if (principal == null) {

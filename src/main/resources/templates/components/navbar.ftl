@@ -1,7 +1,7 @@
 <navbar>
     <div class="navbar navbar-dark bg-dark shadow-sm">
         <div class="container d-flex align-items-center justify-content-between">
-            <a href="/" class="navbar-brand d-flex align-items-center">
+            <a href="/index" class="navbar-brand d-flex align-items-center">
                 <!-- Иконка замка -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" aria-hidden="true" class="me-2" viewBox="0 0 24 24">
                     <rect x="5" y="10" width="14" height="10" rx="2" ry="2"/> <!-- Корпус замка -->
@@ -25,7 +25,7 @@
                             <#break>
                         <#case "ROLE_SECURITY">
                             <a href="/security/workers" class="btn btn-outline-light me-2">Сотрудники</a>
-                            <a href="/security/doors" class="btn btn-outline-light me-2">Двери</a>
+                            <a href="/security/doors" class="btn btn-outline-light me-2">Зоны</a>
                             <a href="/security/accessAttempts" class="btn btn-outline-light me-2">События доступа</a>
                             <#break>
                         <#case "ROLE_ADMIN">

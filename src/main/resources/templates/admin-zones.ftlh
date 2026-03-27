@@ -117,7 +117,8 @@
                                 <p class="card-text">Уровень доступа зоны: ${zone.zoneAccessLvl?string?replace("LEVEL_", "Уровень ")}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group">
-                                        <a href="/admin/zones" class="btn btn-dark">Удалить</a>
+                                        <a href="/admin/editZone/${zone.id}" class="btn btn-dark me-2">Редактировать</a>
+                                        <a href="/admin/deleteZone/${zone.id}" class="btn btn-outline-danger">Удалить</a>
                                     </div>
                                 </div>
                             </div>

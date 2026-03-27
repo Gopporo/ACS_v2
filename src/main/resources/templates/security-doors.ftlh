@@ -15,7 +15,6 @@
 <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 mb-0">Зоны доступа</h1>
-        <a class="btn btn-dark" href="/security/doors/add">Добавить</a>
     </div>
 
     <form method="get" action="/security/doors" class="row g-2 align-items-end mb-4">
@@ -38,22 +37,19 @@
             <thead class="table-light">
             <tr>
                 <th>Название</th>
+                <th>Описание</th>
                 <th>Уровень доступа</th>
-                <th style="width: 220px;">Действия</th>
             </tr>
             </thead>
             <tbody>
             <#list doors as door>
                 <tr>
                     <td>${door.name!""}</td>
+                    <td>${door.disc!"-"}</td>
                     <td>
                         <#if door.zoneAccessLvl??>
                             ${door.zoneAccessLvl?string?replace("LEVEL_", "Уровень ")}
                         <#else>-</#if>
-                    </td>
-                    <td class="d-flex gap-2">
-                        <a class="btn btn-outline-dark btn-sm" href="/security/doors/edit/${door.id}">Редактировать</a>
-                        <a class="btn btn-outline-danger btn-sm" href="/security/doors/delete/${door.id}">Удалить</a>
                     </td>
                 </tr>
             </#list>

@@ -15,7 +15,6 @@
 <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h3 mb-0">Сотрудники</h1>
-        <a class="btn btn-dark" href="/security/workers/add">Добавить</a>
     </div>
 
     <form method="get" action="/security/workers" class="row g-2 align-items-end mb-4">
@@ -38,10 +37,10 @@
             <thead class="table-light">
             <tr>
                 <th>ФИО</th>
+                <th>Должность</th>
                 <th>Телефон</th>
                 <th>Уровень доступа</th>
                 <th>Отпечаток</th>
-                <th style="width: 220px;">Действия</th>
             </tr>
             </thead>
             <tbody>
@@ -54,6 +53,7 @@
                             -
                         </#if>
                     </td>
+                    <td>${worker.position!"-"}</td>
                     <td>${worker.numberPhone!"-"}</td>
                     <td>
                         <#if worker.userAccessLvl??>
@@ -66,10 +66,6 @@
                         <#else>
                             -
                         </#if>
-                    </td>
-                    <td class="d-flex gap-2">
-                        <a class="btn btn-outline-dark btn-sm" href="/security/workers/edit/${worker.id}">Редактировать</a>
-                        <a class="btn btn-outline-danger btn-sm" href="/security/workers/delete/${worker.id}">Удалить</a>
                     </td>
                 </tr>
             </#list>

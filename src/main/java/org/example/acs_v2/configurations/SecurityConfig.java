@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .and()
                 .formLogin()
                 .loginPage("/login")
+                .defaultSuccessUrl("/index", true)
                 .permitAll()
                 .and()
                 .logout()

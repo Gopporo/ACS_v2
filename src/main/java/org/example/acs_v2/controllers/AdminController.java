@@ -214,6 +214,31 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/admin/editZone/{id}")
+    public String editZonePage(@PathVariable Long id, Principal principal, Model model) {
+        Zone zone = zoneService.getById(id);
+        model.addAttribute("zone", zone);
+        model.addAttribute("accessLevels", AccessLevel.values());
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return "admin-edit-zone";
+    }
+
+    @PostMapping("/admin/updateZone/{id}")
+    public String updateZone(@PathVariable Long id, @ModelAttribute Zone formZone) {
+        Zone zone = zoneService.getById(id);
+        zone.setName(formZone.getName());
+        zone.setDisc(formZone.getDisc());
+        zone.setZoneAccessLvl(formZone.getZoneAccessLvl());
+        zoneService.save(zone);
+        return REDIRECT_ADMIN_ZONES;
+    }
+
+    @GetMapping("/admin/deleteZone/{id}")
+    public String deleteZone(@PathVariable Long id) {
+        zoneService.deleteById(id);
+        return REDIRECT_ADMIN_ZONES;
+    }
+
     /**
      * Фильтрация зон по уровню доступа
      */
@@ -298,6 +323,38 @@ public class AdminController {
             model.addAttribute(ERROR_MESSAGE, "Отдел: " + department.getName() + " уже существует");
             return ADD_DEPARTMENT;
         }
+    }
+
+    @GetMapping("/admin/editDepartment/{id}")
+    public String editDepartmentPage(@PathVariable Long id, Principal principal, Model model) {
+        Department department = departmentService.getDepartmentById(id);
+        List<User> availableDirectors = userService.findDirectorsWithoutDepartment();
+        model.addAttribute("department", department);
+        model.addAttribute(AVAILABLE_DIRECTORS, availableDirectors);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return "admin-edit-department";
+    }
+
+    @PostMapping("/admin/updateDepartment/{id}")
+    public String updateDepartment(@PathVariable Long id,
+                                   @RequestParam(required = false) Long headId,
+                                   @RequestParam String name) {
+        Department department = departmentService.getDepartmentById(id);
+        department.setName(name);
+        if (headId != null) {
+            User head = userRepository.findById(headId).orElseThrow(() -> new ResourceNotFoundException("User", headId));
+            department.setHead(head);
+            head.setDepartment(department);
+            userRepository.save(head);
+        }
+        departmentService.save(department);
+        return REDIRECT_ADMIN_DEPARTMENTS;
+    }
+
+    @GetMapping("/admin/deleteDepartment/{id}")
+    public String deleteDepartment(@PathVariable Long id) {
+        departmentService.deleteById(id);
+        return REDIRECT_ADMIN_DEPARTMENTS;
     }
 
     /**

@@ -96,4 +96,15 @@ public class DepartmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Department", departmentId));
     }
 
+    public Department save(Department department) {
+        return departmentRepository.save(department);
+    }
+
+    public void deleteById(Long departmentId) {
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new ResourceNotFoundException("Department", departmentId);
+        }
+        departmentRepository.deleteById(departmentId);
+    }
+
 }
