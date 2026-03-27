@@ -8,6 +8,7 @@ import org.example.acs_v2.dto.UserUpdateDto;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.utils.ModelAttributeHelper;
+import org.example.acs_v2.tcp.TcpFingerprintServer;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +23,7 @@ import javax.validation.Valid;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 import java.security.Principal;
 
 import static org.example.acs_v2.constants.ModelAttributeConstants.*;
@@ -38,6 +40,7 @@ public class UserController {
 
     private final UserService userService;
     private final ModelAttributeHelper modelAttributeHelper;
+    private final TcpFingerprintServer tcpFingerprintServer;
 
     /**
      * Проверяет, аутентифицирован ли пользователь
@@ -100,12 +103,37 @@ public class UserController {
 
             userService.preRegistrationUser(user);
             log.info("User pre-registered successfully: {}", user.getEmail());
+
+            // Стартуем регистрацию отпечатка на TCP-сервере.
+            User savedUser = userService.getByEmail(user.getEmail());
+            if (savedUser != null) {
+                tcpFingerprintServer.enableRegisterMode(savedUser);
+                return "redirect:/registration/fingerprint?userId=" + savedUser.getId();
+            }
+
             return REDIRECT_LOGIN;
         } catch (UserAlreadyExistsException e) {
             log.warn("Registration failed: {}", e.getMessage());
             model.addAttribute(ERROR_MESSAGE, e.getMessage());
             return REGISTRATION;
         }
+    }
+
+    @GetMapping("/registration/fingerprint")
+    public String registrationFingerprintPage(@RequestParam Long userId, Model model) {
+        model.addAttribute("userId", userId);
+        return "registration-fingerprint";
+    }
+
+    @GetMapping(value = "/registration/fingerprint/status", produces = "application/json")
+    @ResponseBody
+    public Map<String, Boolean> registrationFingerprintStatus(@RequestParam Long userId) {
+        User user = userService.getById(userId);
+        boolean fingerprintSet = user != null
+                && user.getFingerprintHash() != null
+                && !user.getFingerprintHash().isBlank();
+
+        return Map.of("fingerprintSet", fingerprintSet);
     }
 
     /**

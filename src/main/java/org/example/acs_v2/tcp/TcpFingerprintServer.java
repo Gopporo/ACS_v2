@@ -6,7 +6,6 @@ import org.example.acs_v2.models.AccessAttempt;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
-import org.example.acs_v2.models.enums.Status;
 import org.example.acs_v2.repositories.AccessAttemptRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.repositories.ZoneRepository;
@@ -37,7 +36,6 @@ public class TcpFingerprintServer {
     private final AtomicBoolean deleteMode = new AtomicBoolean(false);
 
     private final AtomicReference<User> pendingUser = new AtomicReference<>(null);
-    private final AtomicReference<User> unknownUser = new AtomicReference<>(null);
 
     @PostConstruct
     public void init() {
@@ -71,16 +69,8 @@ public class TcpFingerprintServer {
     }
 
     private User ensureUnknownUser() {
-        User unknown = userRepository.findByName("Unknown");
-        if (unknown == null) {
-            unknown = new User();
-            unknown.setName("Unknown");
-            unknown.setUserAccessLvl(AccessLevel.LEVEL_1);
-            unknown.setStatus(Status.ACTIVE);
-            userRepository.save(unknown);
-        }
-        unknownUser.set(unknown);
-        return unknown;
+        // "Unknown" с ESP должен попадать в AccessAttempt, но НЕ создавать пользователя в БД.
+        return null;
     }
 
     private void handleClient(Socket socket) {

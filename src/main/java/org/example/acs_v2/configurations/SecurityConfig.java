@@ -27,6 +27,8 @@ public class SecurityConfig {
                         "/css/**",
                         "/js/**",
                         "/registration",
+                        "/registration/fingerprint",
+                        "/registration/fingerprint/status",
                         "/login"
                 )
                 .permitAll()

@@ -40,6 +40,9 @@
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
                 <button type="submit" class="btn btn-dark">Зарегистрироваться</button>
             </form>
+            <p class="mt-3" style="color: #555;">
+                После регистрации вы перейдете к шагу сканирования отпечатка пальца.
+            </p>
             <div class="ss">
                 <#if errorMessage??>
                     <h2 style="color: black">${errorMessage}</h2>
