@@ -76,7 +76,7 @@
 </header>
 
 <main>
-    <#if !reports?has_content>
+    <#if !(reports??) || !reports?has_content>
         <div class="container py-5">
             <div class="alert alert-secondary text-center mb-0">
                 Отчетов пока нет.

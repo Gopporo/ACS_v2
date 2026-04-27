@@ -24,7 +24,7 @@
     <meta name="theme-color" content="#7952b3">
 
     <style>
-        .card {
+        .report-card {
             height: 250px;
             overflow: hidden;
         }
@@ -140,7 +140,7 @@
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                <#if !reports?has_content>
+                <#if !(reports??) || !reports?has_content>
                     <div class="col-12">
                         <div class="alert alert-secondary text-center mb-0">
                             Отчетов по отделу пока нет.
@@ -149,7 +149,7 @@
                 <#else>
                 <#list reports as report>
                     <div class="col">
-                        <div class="card shadow-sm">
+                        <div class="card shadow-sm report-card">
                             <div class="card-body">
                                 <h4>Отчет по заявке: ${report.application.name}</h4>
                                 <br>

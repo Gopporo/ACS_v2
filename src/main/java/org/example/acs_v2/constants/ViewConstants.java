@@ -18,6 +18,7 @@ public final class ViewConstants {
     public static final String ADD_USER = "addUser";
     public static final String ADD_ZONE = "addZone";
     public static final String ADD_DEPARTMENT = "addDepartment";
+    public static final String ADMIN_FINGERPRINT = "admin-fingerprint";
 
     // Director views
     public static final String DIRECTOR_USERS = "director-users";

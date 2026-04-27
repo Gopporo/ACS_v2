@@ -87,7 +87,8 @@
                     <button type="submit" class="btn btn-dark">Сохранить</button>
                 </div>
             </form>
-            <div class="d-flex justify-content-center mt-4">
+            <div class="d-flex justify-content-center gap-2 mt-4 flex-wrap">
+                <a href="/admin/fingerprint?userId=${user.id!''}" class="btn btn-outline-dark">Перезаписать отпечаток</a>
                 <a href="/admin/deleteUser/${user.id!''}" class="btn btn-outline-danger">Удалить пользователя</a>
             </div>
             <div class="ss">

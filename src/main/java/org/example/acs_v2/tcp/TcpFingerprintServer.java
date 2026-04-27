@@ -40,6 +40,7 @@ public class TcpFingerprintServer {
     private final AtomicReference<Long> scannerZoneId = new AtomicReference<>(1L);
 
     private final AtomicReference<User> pendingUser = new AtomicReference<>(null);
+    private final AtomicReference<String> pendingOldFingerprint = new AtomicReference<>(null);
 
     @PostConstruct
     public void init() {
@@ -107,10 +108,16 @@ public class TcpFingerprintServer {
                         out.flush();
                         registerMode.set(false);
                         pendingUser.set(null);
+                        pendingOldFingerprint.set(null);
                         break;
                     }
 
-                    out.write("REGISTER\n");
+                    String old = pendingOldFingerprint.get();
+                    if (old != null && !old.isBlank() && old.matches("\\d+")) {
+                        out.write("REGISTER " + old + "\n");
+                    } else {
+                        out.write("REGISTER\n");
+                    }
                     out.flush();
 
                     String response = in.readLine(); // ждём ответ от ESP
@@ -127,6 +134,7 @@ public class TcpFingerprintServer {
 
                     registerMode.set(false);
                     pendingUser.set(null);
+                    pendingOldFingerprint.set(null);
                     break;
                 }
 
@@ -229,12 +237,22 @@ public class TcpFingerprintServer {
         this.registerMode.set(true);
         this.deleteMode.set(false);
         this.pendingUser.set(user);
+        this.pendingOldFingerprint.set(null);
         log.info("Register mode enabled for user: {}", user != null ? user.getFullName() : "null");
+    }
+
+    public void enableRegisterModeReplace(User user, String oldFingerprintId) {
+        this.registerMode.set(true);
+        this.deleteMode.set(false);
+        this.pendingUser.set(user);
+        this.pendingOldFingerprint.set(oldFingerprintId);
+        log.info("Register replace mode enabled for user: {}", user != null ? user.getFullName() : "null");
     }
 
     public void cancelRegisterMode() {
         this.registerMode.set(false);
         this.pendingUser.set(null);
+        this.pendingOldFingerprint.set(null);
         log.info("Register mode cancelled");
     }
 

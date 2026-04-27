@@ -70,7 +70,7 @@
 </header>
 
 <main>
-    <#if !applications?has_content>
+    <#if !(applications??) || !applications?has_content>
         <div class="container py-5">
             <div class="alert alert-secondary text-center mb-0">
                 У вас пока нет заявок в работе.

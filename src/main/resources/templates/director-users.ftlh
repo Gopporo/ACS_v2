@@ -104,7 +104,7 @@
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                <#if !users?has_content>
+                <#if !(users??) || !users?has_content>
                     <div class="col-12">
                         <div class="alert alert-secondary text-center mb-0">
                             В вашем отделе пока нет сотрудников.

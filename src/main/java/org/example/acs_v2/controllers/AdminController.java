@@ -133,6 +133,46 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/admin/fingerprint")
+    public String adminFingerprintPage(@RequestParam Long userId, Model model, Principal principal) {
+        User user = userService.getById(userId);
+        if (user == null) {
+            return REDIRECT_ADMIN_USERS;
+        }
+        // запускаем режим "перезаписи": ESP сам удалит старый id при успехе
+        tcpFingerprintServer.enableRegisterModeReplace(user, user.getFingerprintHash());
+        model.addAttribute("targetUserId", userId);
+        modelAttributeHelper.addUserAttributes(model, principal);
+        return ADMIN_FINGERPRINT;
+    }
+
+    @GetMapping(value = "/admin/fingerprint/status", produces = "application/json")
+    @ResponseBody
+    public Map<String, Boolean> adminFingerprintStatus(@RequestParam Long userId) {
+        User user = userService.getById(userId);
+        boolean fingerprintSet = user != null
+                && user.getFingerprintHash() != null
+                && !user.getFingerprintHash().isBlank();
+        return Map.of("fingerprintSet", fingerprintSet);
+    }
+
+    @PostMapping(value = "/admin/fingerprint/retry", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> adminFingerprintRetry(@RequestParam Long userId) {
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Map.of("ok", false, "message", "Пользователь не найден");
+        }
+        tcpFingerprintServer.enableRegisterModeReplace(user, user.getFingerprintHash());
+        return Map.of("ok", true, "message", "Повторное сканирование запущено");
+    }
+
+    @PostMapping("/admin/fingerprint/cancel")
+    public String adminFingerprintCancel(@RequestParam Long userId) {
+        tcpFingerprintServer.cancelRegisterMode();
+        return "redirect:/admin/addUser/" + userId;
+    }
+
     /**
      * Удаление пользователя
      */
