@@ -27,6 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u WHERE u.approved = true AND (u.department IS NULL OR u.department.id = 1)")
     List<User> findByWithoutDepartmentAndApprovedTrue();
     List<User> findByDepartmentIdAndApprovedTrue(Long departmentId);
+    long countByDepartmentIdAndApprovedTrue(Long departmentId);
 
 
 }

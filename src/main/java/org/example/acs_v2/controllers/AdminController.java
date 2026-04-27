@@ -300,8 +300,17 @@ public class AdminController {
     public String manageDepartments(Model model, Principal principal) {
         List<Department> departments = departmentService.list();
         model.addAttribute(DEPARTMENTS, departments);
+        model.addAttribute("departmentEmployeeCounts", buildDepartmentEmployeeCounts(departments));
         modelAttributeHelper.addUserAttributes(model, principal);
         return ADMIN_DEPARTMENTS;
+    }
+
+    private java.util.Map<Long, Long> buildDepartmentEmployeeCounts(List<Department> departments) {
+        java.util.Map<Long, Long> counts = new java.util.HashMap<>();
+        for (Department department : departments) {
+            counts.put(department.getId(), userRepository.countByDepartmentIdAndApprovedTrue(department.getId()));
+        }
+        return counts;
     }
 
     /**
@@ -351,14 +360,22 @@ public class AdminController {
             }
 
             department.setHead(head);
-            departmentService.createDepartment(department, headId, employeeIds);
+            boolean created = departmentService.createDepartment(department, headId, employeeIds);
+            if (!created) {
+                model.addAttribute(ERROR_MESSAGE, "Отдел: " + department.getName() + " уже существует");
+                model.addAttribute(AVAILABLE_DIRECTORS, userService.findDirectorsWithoutDepartment());
+                model.addAttribute("availableEmployees", userService.findApprovedUsersWithoutDepartment().stream()
+                        .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                        .toList());
+                return ADD_DEPARTMENT;
+            }
             log.info("Department {} created successfully", department.getName());
 
             return REDIRECT_ADMIN_DEPARTMENTS;
 
         } catch (Exception e) {
             log.error("Error creating department {}: {}", department.getName(), e.getMessage());
-            model.addAttribute(ERROR_MESSAGE, "Отдел: " + department.getName() + " уже существует");
+            model.addAttribute(ERROR_MESSAGE, "Ошибка при создании отдела: " + e.getMessage());
             model.addAttribute(AVAILABLE_DIRECTORS, userService.findDirectorsWithoutDepartment());
             model.addAttribute("availableEmployees", userService.findApprovedUsersWithoutDepartment().stream()
                     .filter(user -> user.getRoles().contains(Role.ROLE_USER))
@@ -419,6 +436,7 @@ public class AdminController {
                 : departmentService.list();
 
         model.addAttribute(DEPARTMENTS, departments);
+        model.addAttribute("departmentEmployeeCounts", buildDepartmentEmployeeCounts(departments));
         modelAttributeHelper.addUserAttributes(model, principal);
         return ADMIN_DEPARTMENTS;
     }

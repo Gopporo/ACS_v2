@@ -33,75 +33,21 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Для "дропа БД" это нужно оставлять идемпотентным: повторный запуск не должен создавать дубликаты.
-        if (userRepository.count() != 0
-                || zoneRepository.count() != 0
-                || departmentRepository.count() != 0
-                || accessAttemptRepository.count() != 0) {
-            return;
-        }
-
-        ensureDepartments();
-        User admin = createRoleUser("admin@acs.local",
-                "Иванов Иван Иванович",
-                "+375291111111",
-                "Системный администратор",
-                AccessLevel.LEVEL_5,
-                Role.ROLE_ADMIN,
-                departmentRepository.findByName("Без отдела"));
-
-        User director = createRoleUser("director@acs.local",
-                "Петров Петр Петрович",
-                "+375292222222",
-                "Руководитель отдела",
-                AccessLevel.LEVEL_4,
-                Role.ROLE_DIRECTOR,
-                departmentRepository.findByName("Без отдела"));
-
-        User security = createRoleUser("security@acs.local",
-                "Сидоров Сидор Сидорович",
-                "+375293333333",
-                "Сотрудник безопасности",
-                AccessLevel.LEVEL_3,
-                Role.ROLE_SECURITY,
-                departmentRepository.findByName("Без отдела"));
-
-        User user = createRoleUser("user@acs.local",
-                "Козлов Костя Козлович",
-                "+375294444444",
-                "Сотрудник",
-                AccessLevel.LEVEL_2,
-                Role.ROLE_USER,
-                departmentRepository.findByName("Без отдела"));
-
-        ensureZones();
-        ensureAttempts(admin, security, user);
+        ensureNoDepartment();
     }
 
-    private void ensureDepartments() {
-        if (departmentRepository.count() != 0) {
+    private void ensureNoDepartment() {
+        if (departmentRepository.findById(1L).isPresent()) {
             return;
         }
-
+        if (departmentRepository.findByName("Без отдела") != null) {
+            return;
+        }
         Department none = new Department();
+        none.setId(1L);
         none.setName("Без отдела");
         departmentRepository.save(none);
-
-        Department it = new Department();
-        it.setName("IT");
-        departmentRepository.save(it);
-
-        Department warehouse = new Department();
-        warehouse.setName("Склад");
-        departmentRepository.save(warehouse);
-
-        Department securityDept = new Department();
-        securityDept.setName("Безопасность");
-        departmentRepository.save(securityDept);
-
-        Department administration = new Department();
-        administration.setName("Администрация");
-        departmentRepository.save(administration);
+        log.info("Seed department created: Без отдела (id=1)");
     }
 
     private User createRoleUser(String email,

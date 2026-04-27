@@ -96,7 +96,7 @@
                                 <br>
                                 <p class="card-text">Глава отдела:  <#if department.head??>${department.head.name}<#else>Не назначен</#if></p>
                                 <br>
-                                <p class="card-text">Количество сотрудников: <#if department.users??>${department.users?size}<#else>0</#if></p>
+                                <p class="card-text">Количество сотрудников: ${(departmentEmployeeCounts[department.id])!0}</p>
                                 <br>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group">
