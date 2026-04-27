@@ -8,11 +8,14 @@ import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.ApplicationRepository;
+import org.example.acs_v2.repositories.TemporaryAccessRequestRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.repositories.ZoneRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Сервис для управления заявками
@@ -25,6 +28,18 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final ZoneRepository zoneRepository;
     private final UserRepository userRepository;
+    private final TemporaryAccessRequestRepository temporaryAccessRequestRepository;
+
+    private List<Application> excludePendingTempAccessRequests(List<Application> applications) {
+        List<Long> requestedIds = temporaryAccessRequestRepository.findAllRequestedApplicationIds();
+        if (requestedIds == null || requestedIds.isEmpty()) {
+            return applications;
+        }
+        Set<Long> requestedSet = requestedIds.stream().collect(Collectors.toSet());
+        return applications.stream()
+                .filter(a -> a.getId() == null || !requestedSet.contains(a.getId()))
+                .collect(Collectors.toList());
+    }
 
     /**
      * Получает заявки по уровню доступа (только незавершенные)
@@ -33,7 +48,9 @@ public class ApplicationService {
      * @return список заявок
      */
     public List<Application> getApplicationsByAccessLvl(AccessLevel accessLvl) {
-        return applicationRepository.findApplicationsByAccessLevelAndCompletedFalse(accessLvl);
+        return excludePendingTempAccessRequests(
+                applicationRepository.findApplicationsByAccessLevelAndCompletedFalse(accessLvl)
+        );
     }
 
     /**
@@ -43,7 +60,9 @@ public class ApplicationService {
      * @return список заявок
      */
     public List<Application> getApplicationsByName(String name) {
-        return applicationRepository.findApplicationsByNameAndCompletedFalse(name);
+        return excludePendingTempAccessRequests(
+                applicationRepository.findApplicationsByNameAndCompletedFalse(name)
+        );
     }
 
     /**
@@ -52,7 +71,9 @@ public class ApplicationService {
      * @return список заявок
      */
     public List<Application> listOfFreeApplications() {
-        return applicationRepository.findByUserIdIsNullAndCompletedFalse();
+        return excludePendingTempAccessRequests(
+                applicationRepository.findByUserIdIsNullAndCompletedFalse()
+        );
     }
 
     /**
@@ -71,7 +92,7 @@ public class ApplicationService {
      * @return список заявок
      */
     public List<Application> list() {
-        return applicationRepository.findAllByCompletedFalse();
+        return excludePendingTempAccessRequests(applicationRepository.findAllByCompletedFalse());
     }
 
     /**

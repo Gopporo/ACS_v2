@@ -31,7 +31,7 @@
                    href="/director/temp-access-requests/${req.id}">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">${req.application.name}</h5>
-                        <small>${req.createdAt?string("HH:mm dd.MM.yyyy")}</small>
+                        <small>${req.createdAt}</small>
                     </div>
                     <p class="mb-1">
                         Сотрудник: <b>${req.requester.name}</b>,

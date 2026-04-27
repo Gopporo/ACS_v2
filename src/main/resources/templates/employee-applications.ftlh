@@ -144,6 +144,25 @@
     </div>
 </main>
 
+<!-- Modal: request temporary access -->
+<div class="modal fade" id="tempAccessModal" tabindex="-1" aria-labelledby="tempAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tempAccessModalLabel">Запросить временный допуск?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                Уровень доступа заявки выше вашего. Отправить запрос руководителю на временный допуск?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Нет</button>
+                <a href="#" class="btn btn-dark" id="tempAccessConfirmBtn">Да</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Получаем все кнопки с классом "filter-btn"
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -163,18 +182,28 @@
     });
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
 <script>
-    // Перехватываем "Принять" и, если уровень заявки выше, предлагаем запросить временный допуск
+    // Перехватываем "Принять" и, если уровень заявки выше, предлагаем запросить временный допуск (Bootstrap modal)
     const userEffectiveRank = ${userEffectiveAccessRank!0};
+    const tempAccessModalEl = document.getElementById('tempAccessModal');
+    const tempAccessConfirmBtn = document.getElementById('tempAccessConfirmBtn');
+    const tempAccessModal = tempAccessModalEl ? new bootstrap.Modal(tempAccessModalEl) : null;
+
     document.querySelectorAll('.accept-btn').forEach(btn => {
         btn.addEventListener('click', function (e) {
             const appRank = parseInt(this.getAttribute('data-app-rank') || '0', 10);
             if (userEffectiveRank < appRank) {
                 e.preventDefault();
                 const appId = this.getAttribute('data-app-id');
-                const yes = confirm('Запросить временный допуск?');
-                if (yes) {
-                    window.location.href = '/employee/requestTempAccess/' + appId;
+                if (tempAccessConfirmBtn) {
+                    tempAccessConfirmBtn.setAttribute('href', '/employee/requestTempAccess/' + appId);
+                }
+                if (tempAccessModal) {
+                    tempAccessModal.show();
                 }
             }
         });

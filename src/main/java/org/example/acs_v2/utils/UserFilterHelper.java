@@ -27,8 +27,11 @@ public class UserFilterHelper {
      * Фильтрует пользователей по департаменту
      */
     public List<User> filterByDepartment(List<User> users, Department department) {
+        Long depId = department == null ? null : department.getId();
         return users.stream()
-                .filter(user -> user.getDepartment() != null && user.getDepartment().equals(department))
+                .filter(user -> user.getDepartment() != null
+                        && user.getDepartment().getId() != null
+                        && user.getDepartment().getId().equals(depId))
                 .collect(Collectors.toList());
     }
 
@@ -57,12 +60,15 @@ public class UserFilterHelper {
      * - исключает самого директора
      */
     public List<User> filterForDirector(List<User> users, User director, Department department) {
+        Long depId = department == null ? null : department.getId();
         return users.stream()
                 .filter(User::isApproved)
                 .filter(user -> user.getRoles().stream()
                         .noneMatch(role -> role.getAuthority().equals("ROLE_ADMIN")))
                 .filter(user -> !user.getId().equals(director.getId()))
-                .filter(user -> user.getDepartment() != null && user.getDepartment().equals(department))
+                .filter(user -> user.getDepartment() != null
+                        && user.getDepartment().getId() != null
+                        && user.getDepartment().getId().equals(depId))
                 .collect(Collectors.toList());
     }
 }
