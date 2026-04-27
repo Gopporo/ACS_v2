@@ -70,6 +70,13 @@
 </header>
 
 <main>
+    <#if !applications?has_content>
+        <div class="container py-5">
+            <div class="alert alert-secondary text-center mb-0">
+                У вас пока нет заявок в работе.
+            </div>
+        </div>
+    <#else>
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
@@ -86,7 +93,7 @@
                                 <p class="card-text">Описание: ${apl.disc}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <a href="/employee/addReport/${apl.id}" class="btn btn-dark me-2">Написать отчет</a>
-                                    <a href="/employee/declineApplication/${apl.id}" class="btn btn-dark me-2">Отклонить заявку</a>
+                                    <a href="/employee/declineApplication/${apl.id}" class="btn btn-outline-danger me-2">Отклонить заявку</a>
                                 </div>
                             </div>
                         </div>
@@ -95,6 +102,7 @@
             </div>
         </div>
     </div>
+    </#if>
 </main>
 
 <#include "components/footer.ftl">

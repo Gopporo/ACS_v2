@@ -37,7 +37,7 @@
             </div>
 
             <input type="hidden" name="_csrf" value="${_csrf.token}">
-            <button type="submit" class="btn btn-success mt-2">Отправить отчет</button>
+            <button type="submit" class="btn btn-dark mt-2">Отправить отчет</button>
         </form>
 
         <br>

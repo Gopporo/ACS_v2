@@ -27,9 +27,9 @@
         Уровень доступа:<b>${user.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</b>
         <br>
         <br>
-        <a class="btn btn-primary" href="/user/edit/${user.id}">Редактировать</a>
+        <a class="btn btn-outline-dark" href="/user/edit/${user.id}">Редактировать</a>
         <hr>
-        <a class="btn btn-primary" href="/logout">Выход</a>
+        <a class="btn btn-danger" href="/logout">Выход</a>
     </div>
     <#if errorMessage??>
         <h2 style="color: red">${errorMessage}</h2>

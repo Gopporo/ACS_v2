@@ -27,19 +27,25 @@
     <#if requests?has_content>
         <div class="list-group">
             <#list requests as req>
-                <a class="list-group-item list-group-item-action"
-                   href="/director/temp-access-requests/${req.id}">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">${req.application.name}</h5>
-                        <small>${req.createdAt}</small>
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">${req.application.name}</h5>
+                                <small class="text-muted">${req.createdAt}</small>
+                            </div>
+                            <p class="mb-1">
+                                Сотрудник: <b>${req.requester.name}</b>,
+                                Должность: <b>${req.requester.position!""}</b>,
+                                Уровень: <b>${req.requester.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</b>
+                            </p>
+                            <small class="text-muted">Требуемый допуск: ${req.requestedLevel?string?replace("LEVEL_", "Уровень ")}</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <a class="btn btn-outline-dark" href="/director/temp-access-requests/${req.id}">Просмотр</a>
+                        </div>
                     </div>
-                    <p class="mb-1">
-                        Сотрудник: <b>${req.requester.name}</b>,
-                        Должность: <b>${req.requester.position!""}</b>,
-                        Уровень: <b>${req.requester.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</b>
-                    </p>
-                    <small>Требуемый допуск: ${req.requestedLevel?string?replace("LEVEL_", "Уровень ")}</small>
-                </a>
+                </div>
             </#list>
         </div>
     <#else>

@@ -111,6 +111,13 @@
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                <#if !applications?has_content>
+                    <div class="col-12">
+                        <div class="alert alert-secondary text-center mb-0">
+                            Сейчас нет доступных заявок.
+                        </div>
+                    </div>
+                <#else>
                 <#list applications as apl>
                     <div class="col">
                         <div class="card shadow-sm">
@@ -130,6 +137,7 @@
                         </div>
                     </div>
                 </#list>
+                </#if>
             </div>
         </div>
     </div>

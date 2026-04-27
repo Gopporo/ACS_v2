@@ -34,7 +34,7 @@
         <br>
         <input type="hidden" name="_csrf" value="${_csrf.token}">
         <div class="text-center">
-            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="submit" class="btn btn-dark">Сохранить</button>
         </div>
     </form>
     <#if errorMessage??>

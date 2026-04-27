@@ -12,6 +12,13 @@ import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.services.*;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.HttpHeaders;
@@ -363,31 +370,66 @@ public class DirectorController {
         DirectorReportStatsDto stats = reportService.buildDepartmentStats(reports);
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            CellStyle labelStyle = workbook.createCellStyle();
+            Font labelFont = workbook.createFont();
+            labelFont.setBold(true);
+            labelStyle.setFont(labelFont);
+            labelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
             XSSFSheet statsSheet = workbook.createSheet("Статистика");
             int rowIndex = 0;
             Row header = statsSheet.createRow(rowIndex++);
-            header.createCell(0).setCellValue("Показатель");
-            header.createCell(1).setCellValue("Значение");
+            header.setHeightInPoints(18);
+            Cell h0 = header.createCell(0);
+            h0.setCellValue("Показатель");
+            h0.setCellStyle(headerStyle);
+            Cell h1 = header.createCell(1);
+            h1.setCellValue("Значение");
+            h1.setCellStyle(headerStyle);
             Row r1 = statsSheet.createRow(rowIndex++);
-            r1.createCell(0).setCellValue("Всего отчетов");
+            Cell r10 = r1.createCell(0);
+            r10.setCellValue("Всего отчетов");
+            r10.setCellStyle(labelStyle);
             r1.createCell(1).setCellValue(stats.getTotalReports());
             Row r2 = statsSheet.createRow(rowIndex++);
-            r2.createCell(0).setCellValue("Уникальных сотрудников");
+            Cell r20 = r2.createCell(0);
+            r20.setCellValue("Уникальных сотрудников");
+            r20.setCellStyle(labelStyle);
             r2.createCell(1).setCellValue(stats.getUniqueEmployees());
             Row r3 = statsSheet.createRow(rowIndex++);
-            r3.createCell(0).setCellValue("Выполненных заявок");
+            Cell r30 = r3.createCell(0);
+            r30.setCellValue("Выполненных заявок");
+            r30.setCellStyle(labelStyle);
             r3.createCell(1).setCellValue(stats.getCompletedApplications());
             Row r4 = statsSheet.createRow(rowIndex++);
-            r4.createCell(0).setCellValue("Среднее отчетов на сотрудника");
+            Cell r40 = r4.createCell(0);
+            r40.setCellValue("Среднее отчетов на сотрудника");
+            r40.setCellStyle(labelStyle);
             r4.createCell(1).setCellValue(stats.getAvgReportsPerEmployee());
+
+            statsSheet.autoSizeColumn(0);
+            statsSheet.autoSizeColumn(1);
+            statsSheet.createFreezePane(0, 1);
 
             XSSFSheet reportsSheet = workbook.createSheet("Отчеты");
             Row reportsHeader = reportsSheet.createRow(0);
-            reportsHeader.createCell(0).setCellValue("Дата");
-            reportsHeader.createCell(1).setCellValue("Сотрудник");
-            reportsHeader.createCell(2).setCellValue("Заявка");
-            reportsHeader.createCell(3).setCellValue("Содержание отчета");
-            reportsHeader.createCell(4).setCellValue("Статус заявки");
+            reportsHeader.setHeightInPoints(18);
+            String[] cols = new String[]{"Дата", "Сотрудник", "Заявка", "Содержание отчета", "Статус заявки"};
+            for (int i = 0; i < cols.length; i++) {
+                Cell c = reportsHeader.createCell(i);
+                c.setCellValue(cols[i]);
+                c.setCellStyle(headerStyle);
+            }
 
             int reportRowIndex = 1;
             for (Report report : reports) {
@@ -398,6 +440,13 @@ public class DirectorController {
                 row.createCell(3).setCellValue(report.getReportDisc());
                 row.createCell(4).setCellValue(report.getApplication().isCompleted() ? "Выполнена" : "В работе");
             }
+
+            for (int i = 0; i < cols.length; i++) {
+                reportsSheet.autoSizeColumn(i);
+                int current = reportsSheet.getColumnWidth(i);
+                reportsSheet.setColumnWidth(i, Math.min(current + 1024, 15000));
+            }
+            reportsSheet.createFreezePane(0, 1);
 
             workbook.write(out);
             return ResponseEntity.ok()

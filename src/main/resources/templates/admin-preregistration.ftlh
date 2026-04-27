@@ -87,8 +87,8 @@
                                 <br>
                                 <p class="card-text">Номер телефона: ${user.number_phone}</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a href="/admin/addUser/${user.id}" class="btn btn-dark me-2">Подтвердить</a>
-                                    <a href="/admin/deleteUser/${user.id}" class="btn btn-dark me-2">Отклонить</a>
+                                    <a href="/admin/addUser/${user.id}" class="btn btn-success me-2">Подтвердить</a>
+                                    <a href="/admin/deleteUser/${user.id}" class="btn btn-danger me-2">Отклонить</a>
                                 </div>
                             </div>
                         </div>

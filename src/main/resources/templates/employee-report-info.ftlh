@@ -20,7 +20,7 @@
         <br>
         <p>${report.reportDisc}</p>
         <hr>
-        <a class="btn btn-primary" href="/employee/reports">Назад</a>
+        <a class="btn btn-outline-dark" href="/employee/reports">Назад</a>
         <br>
     </div>
     <#if errorMessage??>

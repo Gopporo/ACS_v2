@@ -8,6 +8,7 @@ import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.ApplicationRepository;
+import org.example.acs_v2.repositories.TemporaryAccessGrantRepository;
 import org.example.acs_v2.repositories.TemporaryAccessRequestRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.repositories.ZoneRepository;
@@ -29,6 +30,7 @@ public class ApplicationService {
     private final ZoneRepository zoneRepository;
     private final UserRepository userRepository;
     private final TemporaryAccessRequestRepository temporaryAccessRequestRepository;
+    private final TemporaryAccessGrantRepository temporaryAccessGrantRepository;
 
     private List<Application> excludePendingTempAccessRequests(List<Application> applications) {
         List<Long> requestedIds = temporaryAccessRequestRepository.findAllRequestedApplicationIds();
@@ -162,8 +164,12 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application", applicationId));
 
+        Long previousUserId = application.getUser() != null ? application.getUser().getId() : null;
         application.setUser(null);
         applicationRepository.save(application);
+        if (previousUserId != null) {
+            temporaryAccessGrantRepository.deleteByApplicationIdAndUserId(applicationId, previousUserId);
+        }
         log.info("Application {} declined", applicationId);
     }
 

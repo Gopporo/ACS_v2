@@ -107,11 +107,46 @@
                 </div>
             </div>
         </div>
+
+        <#assign totalReports = (reportStats.totalReports)!0>
+        <#assign uniqueEmployees = (reportStats.uniqueEmployees)!0>
+        <#assign repeatReports = (totalReports - uniqueEmployees) >
+
+        <div class="row g-3 mt-1">
+            <div class="col-md-6">
+                <div class="card shadow-sm p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="text-muted">Распределение отчетов</div>
+                        <div class="small text-muted">уникальные vs повторные</div>
+                    </div>
+                    <div style="height: 260px;">
+                        <canvas id="reportsDonut"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm p-3">
+                    <div class="text-muted mb-2">Пояснение</div>
+                    <div class="mb-1"><b>Уникальные</b> — количество сотрудников, у которых есть хотя бы 1 отчет.</div>
+                    <div class="mb-1"><b>Повторные</b> — отчеты сверх первого по каждому сотруднику.</div>
+                    <hr class="my-2"/>
+                    <div class="text-muted">Подсчёт</div>
+                    <div>Повторные отчёты: <b>${repeatReports}</b></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                <#if !reports?has_content>
+                    <div class="col-12">
+                        <div class="alert alert-secondary text-center mb-0">
+                            Отчетов по отделу пока нет.
+                        </div>
+                    </div>
+                <#else>
                 <#list reports as report>
                     <div class="col">
                         <div class="card shadow-sm">
@@ -129,10 +164,42 @@
                         </div>
                     </div>
                 </#list>
+                </#if>
             </div>
         </div>
     </div>
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const ctx = document.getElementById('reportsDonut');
+        if (!ctx || typeof Chart === 'undefined') return;
+
+        const unique = ${uniqueEmployees};
+        const repeat = ${repeatReports};
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Уникальные', 'Повторные'],
+                datasets: [{
+                    data: [unique, repeat < 0 ? 0 : repeat],
+                    backgroundColor: ['#212529', '#6c757d'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '65%'
+            }
+        });
+    })();
+</script>
 
 <#include "components/footer.ftl">
 
