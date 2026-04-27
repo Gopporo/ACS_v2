@@ -107,6 +107,11 @@
             ${errorMessage}
         </div>
     </#if>
+    <#if successMessage??>
+        <div class="alert alert-success text-center" role="alert" style="font-weight: bold; margin: 20px 0;">
+            ${successMessage}
+        </div>
+    </#if>
 
     <div class="album py-5 bg-light">
         <div class="container">
@@ -123,7 +128,12 @@
                                 <br>
                                 <p class="card-text">Описание: ${apl.disc}</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <a href="/employee/acceptApplication/${apl.id}" class="btn btn-dark me-2">Принять</a>
+                                    <a href="/employee/acceptApplication/${apl.id}"
+                                       class="btn btn-dark me-2 accept-btn"
+                                       data-app-id="${apl.id}"
+                                       data-app-rank="${apl.accessLevel.rank}">
+                                        Принять
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -149,6 +159,24 @@
 
             // Отправляем форму
             document.getElementById('filterForm').submit();
+        });
+    });
+</script>
+
+<script>
+    // Перехватываем "Принять" и, если уровень заявки выше, предлагаем запросить временный допуск
+    const userEffectiveRank = ${userEffectiveAccessRank!0};
+    document.querySelectorAll('.accept-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            const appRank = parseInt(this.getAttribute('data-app-rank') || '0', 10);
+            if (userEffectiveRank < appRank) {
+                e.preventDefault();
+                const appId = this.getAttribute('data-app-id');
+                const yes = confirm('Запросить временный допуск?');
+                if (yes) {
+                    window.location.href = '/employee/requestTempAccess/' + appId;
+                }
+            }
         });
     });
 </script>

@@ -24,6 +24,7 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final ApplicationRepository applicationRepository;
+    private final TemporaryAccessService temporaryAccessService;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd.MM.yyyy");
 
@@ -46,6 +47,9 @@ public class ReportService {
         applicationRepository.save(application);
 
         Report savedReport = reportRepository.save(report);
+        if (application.getUser() != null) {
+            temporaryAccessService.revokeGrantForApplication(applicationId, application.getUser().getId());
+        }
         log.info("Report created for application ID: {}", applicationId);
         return savedReport;
     }

@@ -4,6 +4,7 @@ import javax.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -19,8 +20,8 @@ public class Department {
     @Column(name = "name")
     private String name;
 
-    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<User> users;
+    @OneToMany(mappedBy = "department")
+    private List<User> users = new ArrayList<>();
 
     @OneToOne
     @JoinColumn(name = "head_id", unique = true) // Связь с таблицей User для руководителя

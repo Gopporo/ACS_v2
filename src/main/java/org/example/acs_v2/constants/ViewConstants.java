@@ -26,6 +26,8 @@ public final class ViewConstants {
     public static final String DIRECTOR_EDIT_USER = "director-edit-user";
     public static final String DIRECTOR_EDIT_APPLICATION = "director-edit-application";
     public static final String DIRECTOR_REPORT_INFO = "director-report-info";
+    public static final String DIRECTOR_TEMP_ACCESS_REQUESTS = "director-temp-access-requests";
+    public static final String DIRECTOR_TEMP_ACCESS_REQUEST_INFO = "director-temp-access-request-info";
 
     // Employee views
     public static final String EMPLOYEE_APPLICATIONS = "employee-applications";

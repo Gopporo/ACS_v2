@@ -10,6 +10,7 @@ import org.example.acs_v2.repositories.AccessAttemptRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.repositories.ZoneRepository;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
+import org.example.acs_v2.services.TemporaryAccessService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -32,6 +33,7 @@ public class TcpFingerprintServer {
     private final UserRepository userRepository;
     private final ZoneRepository zoneRepository;
     private final AccessAttemptRepository attemptRepository;
+    private final TemporaryAccessService temporaryAccessService;
 
     private final AtomicBoolean registerMode = new AtomicBoolean(false);
     private final AtomicBoolean deleteMode = new AtomicBoolean(false);
@@ -60,6 +62,11 @@ public class TcpFingerprintServer {
 
     private int accessRank(AccessLevel level) {
         return level == null ? 0 : level.getRank();
+    }
+
+    private int effectiveUserRank(User user) {
+        AccessLevel temp = temporaryAccessService.getMaxActiveTemporaryLevel(user.getId());
+        return Math.max(accessRank(user.getUserAccessLvl()), accessRank(temp));
     }
 
     private Zone resolveDefaultZone() {
@@ -195,7 +202,7 @@ public class TcpFingerprintServer {
                     break;
                 }
 
-                boolean granted = accessRank(user.getUserAccessLvl()) >= accessRank(zone.getZoneAccessLvl());
+                boolean granted = effectiveUserRank(user) >= accessRank(zone.getZoneAccessLvl());
 
                 AccessAttempt attempt = new AccessAttempt();
                 attempt.setTimestamp(LocalDateTime.now());

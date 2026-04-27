@@ -34,6 +34,7 @@ public class EmployeeController {
     private final UserService userService;
     private final ApplicationService applicationService;
     private final ReportService reportService;
+    private final TemporaryAccessService temporaryAccessService;
     private final ModelAttributeHelper modelAttributeHelper;
     private final AccessLevelValidator accessLevelValidator;
 
@@ -51,8 +52,13 @@ public class EmployeeController {
      */
     @GetMapping("/employee/applications")
     public String manageApplications(Model model, Principal principal) {
+        User user = userService.getByEmail(principal.getName());
         List<Application> applications = applicationService.listOfFreeApplications();
         model.addAttribute(APPLICATIONS, applications);
+        int baseRank = user.getUserAccessLvl() == null ? 0 : user.getUserAccessLvl().getRank();
+        AccessLevel temp = temporaryAccessService.getMaxActiveTemporaryLevel(user.getId());
+        int effectiveRank = Math.max(baseRank, temp == null ? 0 : temp.getRank());
+        model.addAttribute("userEffectiveAccessRank", effectiveRank);
         modelAttributeHelper.addUserAttributes(model, principal);
         return EMPLOYEE_APPLICATIONS;
     }
@@ -62,12 +68,17 @@ public class EmployeeController {
      */
     @GetMapping("/employee/getApplicationsByAccessLvl")
     public String getApplications(@RequestParam(required = false) String accessLvl, Model model, Principal principal) {
+        User user = userService.getByEmail(principal.getName());
         AccessLevel parsedLevel = parseAccessLevel(accessLvl);
         List<Application> applications = (parsedLevel == null)
                 ? applicationService.listOfFreeApplications()
                 : applicationService.getApplicationsByAccessLvl(parsedLevel);
 
         model.addAttribute(APPLICATIONS, applications);
+        int baseRank = user.getUserAccessLvl() == null ? 0 : user.getUserAccessLvl().getRank();
+        AccessLevel temp = temporaryAccessService.getMaxActiveTemporaryLevel(user.getId());
+        int effectiveRank = Math.max(baseRank, temp == null ? 0 : temp.getRank());
+        model.addAttribute("userEffectiveAccessRank", effectiveRank);
         modelAttributeHelper.addUserAttributes(model, principal);
         return EMPLOYEE_APPLICATIONS;
     }
@@ -77,11 +88,16 @@ public class EmployeeController {
      */
     @GetMapping("/employee/getApplicationsByName")
     public String getApplication(@RequestParam(required = false) String name, Model model, Principal principal) {
+        User user = userService.getByEmail(principal.getName());
         List<Application> applications = (name != null && !name.isEmpty())
                 ? applicationService.getApplicationsByName(name)
                 : applicationService.listOfFreeApplications();
 
         model.addAttribute(APPLICATIONS, applications);
+        int baseRank = user.getUserAccessLvl() == null ? 0 : user.getUserAccessLvl().getRank();
+        AccessLevel temp = temporaryAccessService.getMaxActiveTemporaryLevel(user.getId());
+        int effectiveRank = Math.max(baseRank, temp == null ? 0 : temp.getRank());
+        model.addAttribute("userEffectiveAccessRank", effectiveRank);
         modelAttributeHelper.addUserAttributes(model, principal);
         return EMPLOYEE_APPLICATIONS;
     }
@@ -106,6 +122,18 @@ public class EmployeeController {
             modelAttributeHelper.addUserAttributes(model, principal);
             return EMPLOYEE_APPLICATIONS;
         }
+    }
+
+    @GetMapping("/employee/requestTempAccess/{id}")
+    public String requestTemporaryAccess(@PathVariable Long id, Principal principal, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        User user = userService.getByEmail(principal.getName());
+        try {
+            temporaryAccessService.createRequest(id, user.getId());
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Запрос на временный допуск отправлен руководителю");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, "Ошибка при запросе временного допуска: " + e.getMessage());
+        }
+        return REDIRECT_EMPLOYEE_APPLICATIONS;
     }
 
     /**

@@ -21,6 +21,7 @@
                         <#case "ROLE_DIRECTOR">
                             <a href="/director/users" class="btn btn-outline-light me-2">Сотрудники</a>
                             <a href="/director/applications" class="btn btn-outline-light me-2">Заявки</a>
+                            <a href="/director/temp-access-requests" class="btn btn-outline-light me-2">Временный допуск</a>
                             <a href="/director/reports" class="btn btn-outline-light me-2">Отчеты</a>
                             <#break>
                         <#case "ROLE_SECURITY">

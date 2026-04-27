@@ -18,6 +18,7 @@ public final class RedirectConstants {
     // Director redirects
     public static final String REDIRECT_DIRECTOR_USERS = "redirect:/director/users";
     public static final String REDIRECT_DIRECTOR_APPLICATIONS = "redirect:/director/applications";
+    public static final String REDIRECT_DIRECTOR_TEMP_ACCESS_REQUESTS = "redirect:/director/temp-access-requests";
 
     // Employee redirects
     public static final String REDIRECT_EMPLOYEE_APPLICATIONS = "redirect:/employee/applications";

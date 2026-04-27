@@ -44,6 +44,7 @@ public class DirectorController {
     private final ApplicationService applicationService;
     private final ZoneService zoneService;
     private final ReportService reportService;
+    private final TemporaryAccessService temporaryAccessService;
     private final ModelAttributeHelper modelAttributeHelper;
 
     private AccessLevel parseAccessLevel(String value) {
@@ -449,6 +450,51 @@ public class DirectorController {
             log.error("Error deleting application ID: {}", id, e);
             throw new ResourceNotFoundException("Application", id);
         }
+    }
+
+    @GetMapping("/director/temp-access-requests")
+    public String tempAccessRequests(Model model, Principal principal) {
+        User director = userService.getByEmail(principal.getName());
+        if (director == null || director.getDepartment() == null) {
+            model.addAttribute("requests", List.of());
+            modelAttributeHelper.addCommonAttributes(model, principal);
+            return ViewConstants.DIRECTOR_TEMP_ACCESS_REQUESTS;
+        }
+        model.addAttribute("requests",
+                temporaryAccessService.listRequestsForDirectorDepartment(director.getDepartment().getId()));
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_TEMP_ACCESS_REQUESTS;
+    }
+
+    @GetMapping("/director/temp-access-requests/{id}")
+    public String tempAccessRequestInfo(@PathVariable Long id, Model model, Principal principal) {
+        model.addAttribute("request", temporaryAccessService.getRequest(id));
+        modelAttributeHelper.addCommonAttributes(model, principal);
+        return ViewConstants.DIRECTOR_TEMP_ACCESS_REQUEST_INFO;
+    }
+
+    @GetMapping("/director/temp-access-requests/{id}/approve")
+    public String approveTempAccess(@PathVariable Long id, Principal principal, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        User director = userService.getByEmail(principal.getName());
+        try {
+            temporaryAccessService.approveRequest(id, director.getId());
+            redirectAttributes.addFlashAttribute(ModelAttributeConstants.SUCCESS_MESSAGE, "Временный допуск одобрен");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute(ModelAttributeConstants.ERROR_MESSAGE, "Ошибка: " + e.getMessage());
+        }
+        return RedirectConstants.REDIRECT_DIRECTOR_TEMP_ACCESS_REQUESTS;
+    }
+
+    @GetMapping("/director/temp-access-requests/{id}/deny")
+    public String denyTempAccess(@PathVariable Long id, Principal principal, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        User director = userService.getByEmail(principal.getName());
+        try {
+            temporaryAccessService.denyRequest(id, director.getId());
+            redirectAttributes.addFlashAttribute(ModelAttributeConstants.SUCCESS_MESSAGE, "Запрос отклонён");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute(ModelAttributeConstants.ERROR_MESSAGE, "Ошибка: " + e.getMessage());
+        }
+        return RedirectConstants.REDIRECT_DIRECTOR_TEMP_ACCESS_REQUESTS;
     }
 
 }
