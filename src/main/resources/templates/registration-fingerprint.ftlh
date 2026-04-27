@@ -15,9 +15,7 @@
 <main class="container py-4" style="max-width: 750px;">
     <h1 class="h3 mb-3">Регистрация отпечатка пальца</h1>
 
-    <div class="alert alert-info" role="alert" id="statusBox">
-        Ожидаем сканирование отпечатка...
-    </div>
+    <div class="alert alert-info" role="alert" id="statusBox">Ожидаем сканирование отпечатка...</div>
 
     <p class="mb-3">
         Просканируйте палец на считывателе. После успешного сохранения отпечатка страница автоматически
@@ -56,6 +54,16 @@
     const retryBtn = document.getElementById('retryBtn');
     let done = false;
 
+    function setStatusInfo(text) {
+        statusBox.className = 'alert alert-info';
+        statusBox.textContent = text;
+    }
+
+    function setStatusError(text) {
+        statusBox.className = 'alert alert-danger';
+        statusBox.textContent = text;
+    }
+
     async function pollStatus() {
         if (done) return;
         try {
@@ -63,15 +71,31 @@
                 headers: { 'Accept': 'application/json' }
             });
             const data = await res.json();
-            if (data.fingerprintSet) {
-                done = true;
-                statusBox.textContent = 'Отпечаток сохранен.';
-                afterDoneBlock.style.display = 'block';
-            } else {
-                statusBox.textContent = 'Ожидаем сканирование отпечатка...';
+            if (data.state === 'IN_PROGRESS' || !data.state) {
+                setStatusInfo('Ожидаем сканирование отпечатка...');
+                return;
             }
+
+            if (data.state === 'SUCCESS') {
+                done = true;
+                statusBox.style.display = 'none';
+                afterDoneBlock.style.display = 'block';
+                return;
+            }
+
+            if (data.state === 'ERROR') {
+                setStatusError('Сканирование не удалось. Нажмите «Повторить сканирование» и попробуйте ещё раз.');
+                return;
+            }
+
+            if (data.state === 'CANCELLED') {
+                setStatusInfo('Процесс отменён.');
+                return;
+            }
+
+            setStatusInfo('Ожидаем сканирование отпечатка...');
         } catch (e) {
-            statusBox.textContent = 'Не удалось проверить статус. Попробуйте позже.';
+            setStatusError('Не удалось проверить статус. Попробуйте позже.');
         }
     }
 
@@ -80,19 +104,17 @@
             return;
         }
         retryBtn.disabled = true;
-        statusBox.textContent = 'Перезапускаем процесс регистрации отпечатка...';
         try {
-            const response = await fetch('/registration/fingerprint/retry?userId=' + encodeURIComponent(userId), {
+            await fetch('/registration/fingerprint/retry?userId=' + encodeURIComponent(userId), {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': '${_csrf.token}'
                 }
             });
-            const data = await response.json();
-            statusBox.textContent = data.message || 'Повторное сканирование запущено.';
+            setStatusInfo('Ожидаем сканирование отпечатка...');
         } catch (e) {
-            statusBox.textContent = 'Не удалось перезапустить сканирование.';
+            setStatusError('Не удалось перезапустить сканирование.');
         } finally {
             retryBtn.disabled = false;
         }

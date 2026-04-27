@@ -42,6 +42,18 @@ public class TcpFingerprintServer {
     private final AtomicReference<User> pendingUser = new AtomicReference<>(null);
     private final AtomicReference<String> pendingOldFingerprint = new AtomicReference<>(null);
 
+    public enum RegistrationState {
+        IDLE,
+        IN_PROGRESS,
+        SUCCESS,
+        ERROR,
+        CANCELLED
+    }
+
+    private final AtomicReference<Long> registrationUserId = new AtomicReference<>(null);
+    private final AtomicReference<RegistrationState> registrationState = new AtomicReference<>(RegistrationState.IDLE);
+    private final AtomicReference<String> registrationMessage = new AtomicReference<>(null);
+
     @PostConstruct
     public void init() {
         startServer();
@@ -109,6 +121,8 @@ public class TcpFingerprintServer {
                         registerMode.set(false);
                         pendingUser.set(null);
                         pendingOldFingerprint.set(null);
+                        registrationState.set(RegistrationState.ERROR);
+                        registrationMessage.set("ERROR_NO_WORKER");
                         break;
                     }
 
@@ -127,8 +141,12 @@ public class TcpFingerprintServer {
                         user.setFingerprintHash(response);
                         userRepository.save(user);
                         out.write("REGISTERED\n");
+                        registrationState.set(RegistrationState.SUCCESS);
+                        registrationMessage.set("REGISTERED");
                     } else {
                         out.write("ERROR\n");
+                        registrationState.set(RegistrationState.ERROR);
+                        registrationMessage.set(response == null ? "NO_RESPONSE" : response);
                     }
                     out.flush();
 
@@ -238,6 +256,9 @@ public class TcpFingerprintServer {
         this.deleteMode.set(false);
         this.pendingUser.set(user);
         this.pendingOldFingerprint.set(null);
+        this.registrationUserId.set(user != null ? user.getId() : null);
+        this.registrationState.set(RegistrationState.IN_PROGRESS);
+        this.registrationMessage.set(null);
         log.info("Register mode enabled for user: {}", user != null ? user.getFullName() : "null");
     }
 
@@ -246,6 +267,9 @@ public class TcpFingerprintServer {
         this.deleteMode.set(false);
         this.pendingUser.set(user);
         this.pendingOldFingerprint.set(oldFingerprintId);
+        this.registrationUserId.set(user != null ? user.getId() : null);
+        this.registrationState.set(RegistrationState.IN_PROGRESS);
+        this.registrationMessage.set(null);
         log.info("Register replace mode enabled for user: {}", user != null ? user.getFullName() : "null");
     }
 
@@ -253,7 +277,23 @@ public class TcpFingerprintServer {
         this.registerMode.set(false);
         this.pendingUser.set(null);
         this.pendingOldFingerprint.set(null);
+        this.registrationState.set(RegistrationState.CANCELLED);
+        this.registrationMessage.set("CANCELLED");
         log.info("Register mode cancelled");
+    }
+
+    public RegistrationState getRegistrationState(Long userId) {
+        if (userId != null && userId.equals(registrationUserId.get())) {
+            return registrationState.get();
+        }
+        return RegistrationState.IDLE;
+    }
+
+    public String getRegistrationMessage(Long userId) {
+        if (userId != null && userId.equals(registrationUserId.get())) {
+            return registrationMessage.get();
+        }
+        return null;
     }
 
     public void enableDeleteMode(User user) {

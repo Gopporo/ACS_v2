@@ -15,9 +15,7 @@
 <main class="container py-4" style="max-width: 750px;">
     <h1 class="h3 mb-3">Перезапись отпечатка пальца</h1>
 
-    <div class="alert alert-info" role="alert" id="statusBox">
-        Ожидаем сканирование отпечатка...
-    </div>
+    <div class="alert alert-info" role="alert" id="statusBox">Ожидаем сканирование отпечатка...</div>
 
     <p class="mb-3">
         Просканируйте палец на считывателе. При успехе старый отпечаток будет удалён, а новый сохранён.
@@ -35,12 +33,9 @@
     <input type="hidden" id="userId" value="${targetUserId}">
 
     <div class="mt-3" id="afterDoneBlock" style="display: none;">
-        <div class="alert alert-success mb-0">
-            Отпечаток успешно перезаписан.
-        </div>
+        <div class="alert alert-success mb-0" id="doneBox"></div>
         <div class="mt-3 d-flex gap-2">
-            <a class="btn btn-dark" href="/admin/addUser/${targetUserId}">Вернуться к пользователю</a>
-            <a class="btn btn-outline-dark" href="/admin/users">К списку пользователей</a>
+            <a class="btn btn-dark" href="/admin/addUser/${targetUserId}">Вернуться к редактированию</a>
         </div>
     </div>
 </main>
@@ -49,8 +44,19 @@
     const userId = document.getElementById('userId').value;
     const statusBox = document.getElementById('statusBox');
     const afterDoneBlock = document.getElementById('afterDoneBlock');
+    const doneBox = document.getElementById('doneBox');
     const retryBtn = document.getElementById('retryBtn');
     let done = false;
+
+    function setStatusInfo(text) {
+        statusBox.className = 'alert alert-info';
+        statusBox.textContent = text;
+    }
+
+    function setStatusError(text) {
+        statusBox.className = 'alert alert-danger';
+        statusBox.textContent = text;
+    }
 
     async function pollStatus() {
         if (done) return;
@@ -59,34 +65,49 @@
                 headers: { 'Accept': 'application/json' }
             });
             const data = await res.json();
-            if (data.fingerprintSet) {
-                done = true;
-                statusBox.textContent = 'Отпечаток перезаписан.';
-                afterDoneBlock.style.display = 'block';
-            } else {
-                statusBox.textContent = 'Ожидаем сканирование отпечатка...';
+            if (data.state === 'IN_PROGRESS' || !data.state) {
+                setStatusInfo('Ожидаем сканирование отпечатка...');
+                return;
             }
+
+            if (data.state === 'SUCCESS') {
+                done = true;
+                afterDoneBlock.style.display = 'block';
+                doneBox.textContent = 'Отпечаток успешно перезаписан.';
+                statusBox.style.display = 'none';
+                return;
+            }
+
+            if (data.state === 'ERROR') {
+                setStatusError('Сканирование не удалось. Нажмите «Повторить сканирование» и попробуйте ещё раз.');
+                return;
+            }
+
+            if (data.state === 'CANCELLED') {
+                setStatusInfo('Процесс отменён.');
+                return;
+            }
+
+            setStatusInfo('Ожидаем сканирование отпечатка...');
         } catch (e) {
-            statusBox.textContent = 'Не удалось проверить статус. Попробуйте позже.';
+            setStatusError('Не удалось проверить статус. Попробуйте позже.');
         }
     }
 
     retryBtn.addEventListener('click', async function () {
         if (done) return;
         retryBtn.disabled = true;
-        statusBox.textContent = 'Перезапускаем процесс регистрации отпечатка...';
         try {
-            const response = await fetch('/admin/fingerprint/retry?userId=' + encodeURIComponent(userId), {
+            await fetch('/admin/fingerprint/retry?userId=' + encodeURIComponent(userId), {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': '${_csrf.token}'
                 }
             });
-            const data = await response.json();
-            statusBox.textContent = data.message || 'Повторное сканирование запущено.';
+            setStatusInfo('Ожидаем сканирование отпечатка...');
         } catch (e) {
-            statusBox.textContent = 'Не удалось перезапустить сканирование.';
+            setStatusError('Не удалось перезапустить сканирование.');
         } finally {
             retryBtn.disabled = false;
         }

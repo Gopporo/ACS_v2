@@ -148,12 +148,38 @@ public class AdminController {
 
     @GetMapping(value = "/admin/fingerprint/status", produces = "application/json")
     @ResponseBody
-    public Map<String, Boolean> adminFingerprintStatus(@RequestParam Long userId) {
+    public Map<String, Object> adminFingerprintStatus(@RequestParam Long userId) {
         User user = userService.getById(userId);
-        boolean fingerprintSet = user != null
-                && user.getFingerprintHash() != null
-                && !user.getFingerprintHash().isBlank();
-        return Map.of("fingerprintSet", fingerprintSet);
+        TcpFingerprintServer.RegistrationState state = tcpFingerprintServer.getRegistrationState(userId);
+
+        if (state == TcpFingerprintServer.RegistrationState.IDLE) {
+            // Если процесс сейчас не идёт, а отпечаток уже есть — считаем это "готово",
+            // но НЕ используем это как индикатор прогресса для перезаписи.
+            boolean hasFingerprint = user != null
+                    && user.getFingerprintHash() != null
+                    && !user.getFingerprintHash().isBlank();
+            if (hasFingerprint) {
+                return Map.of(
+                        "state", TcpFingerprintServer.RegistrationState.SUCCESS.name(),
+                        "done", true,
+                        "ok", true,
+                        "message", "Отпечаток сохранён"
+                );
+            }
+        }
+
+        boolean done = state == TcpFingerprintServer.RegistrationState.SUCCESS
+                || state == TcpFingerprintServer.RegistrationState.ERROR
+                || state == TcpFingerprintServer.RegistrationState.CANCELLED;
+        boolean ok = state == TcpFingerprintServer.RegistrationState.SUCCESS;
+        String message = tcpFingerprintServer.getRegistrationMessage(userId);
+
+        return Map.of(
+                "state", state.name(),
+                "done", done,
+                "ok", ok,
+                "message", message
+        );
     }
 
     @PostMapping(value = "/admin/fingerprint/retry", produces = "application/json")
