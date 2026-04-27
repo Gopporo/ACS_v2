@@ -20,14 +20,19 @@ import java.util.Set;
 @Slf4j
 @RequiredArgsConstructor
 public class DepartmentService {
-    public static final Long NO_DEPARTMENT_ID = 1L;
+    public static final String NO_DEPARTMENT_NAME = "Без отдела";
 
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
 
     private Department getNoDepartment() {
-        return departmentRepository.findById(NO_DEPARTMENT_ID)
-                .orElseThrow(() -> new ResourceNotFoundException("Department", NO_DEPARTMENT_ID));
+        Department none = departmentRepository.findFirstByNameOrderByIdAsc(NO_DEPARTMENT_NAME);
+        if (none != null) {
+            return none;
+        }
+        // fallback: historical assumption, if someone preserved id=1
+        return departmentRepository.findById(1L)
+                .orElseThrow(() -> new ResourceNotFoundException("Department", 1L));
     }
 
     /**

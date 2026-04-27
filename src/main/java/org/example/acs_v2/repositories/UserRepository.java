@@ -20,11 +20,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = "SELECT u.* FROM users u " +
             "JOIN user_role ur ON u.id = ur.user_id " +
             "WHERE ur.roles = 'ROLE_DIRECTOR' " +
-            "AND (u.department_id IS NULL OR u.department_id = 1)",
+            "AND (u.department_id IS NULL OR u.department_id IN (SELECT d.id FROM departments d WHERE d.name = 'Без отдела'))",
             nativeQuery = true)
     List<User> findDirectorsWithoutDepartment();
     List<User> findByApproved(boolean approved);
-    @Query("SELECT u FROM User u WHERE u.approved = true AND (u.department IS NULL OR u.department.id = 1)")
+    @Query("SELECT u FROM User u WHERE u.approved = true AND (u.department IS NULL OR u.department.name = 'Без отдела')")
     List<User> findByWithoutDepartmentAndApprovedTrue();
     List<User> findByDepartmentIdAndApprovedTrue(Long departmentId);
     long countByDepartmentIdAndApprovedTrue(Long departmentId);

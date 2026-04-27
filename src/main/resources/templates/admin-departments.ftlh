@@ -88,15 +88,15 @@
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                <#list departments as department>
+                <#list departmentCards as department>
                     <div class="col">
                         <div class="card shadow-sm">
                             <div class="card-body">
                                 <h4>${department.name}</h4>
                                 <br>
-                                <p class="card-text">Глава отдела:  <#if department.head??>${department.head.name}<#else>Не назначен</#if></p>
+                                <p class="card-text">Глава отдела: ${department.headName}</p>
                                 <br>
-                                <p class="card-text">Количество сотрудников: ${(departmentEmployeeCounts[department.id])!0}</p>
+                                <p class="card-text">Количество сотрудников: ${department.employeeCount}</p>
                                 <br>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group">

@@ -37,17 +37,13 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void ensureNoDepartment() {
-        if (departmentRepository.findById(1L).isPresent()) {
-            return;
-        }
-        if (departmentRepository.findByName("Без отдела") != null) {
+        if (departmentRepository.findFirstByNameOrderByIdAsc("Без отдела") != null) {
             return;
         }
         Department none = new Department();
-        none.setId(1L);
         none.setName("Без отдела");
         departmentRepository.save(none);
-        log.info("Seed department created: Без отдела (id=1)");
+        log.info("Seed department created: Без отдела");
     }
 
     private User createRoleUser(String email,

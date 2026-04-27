@@ -2,6 +2,7 @@ package org.example.acs_v2.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.dto.DepartmentCardDto;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
@@ -299,18 +300,19 @@ public class AdminController {
     @GetMapping("/admin/departments")
     public String manageDepartments(Model model, Principal principal) {
         List<Department> departments = departmentService.list();
-        model.addAttribute(DEPARTMENTS, departments);
-        model.addAttribute("departmentEmployeeCounts", buildDepartmentEmployeeCounts(departments));
+        model.addAttribute("departmentCards", buildDepartmentCards(departments));
         modelAttributeHelper.addUserAttributes(model, principal);
         return ADMIN_DEPARTMENTS;
     }
 
-    private java.util.Map<Long, Long> buildDepartmentEmployeeCounts(List<Department> departments) {
-        java.util.Map<Long, Long> counts = new java.util.HashMap<>();
+    private List<DepartmentCardDto> buildDepartmentCards(List<Department> departments) {
+        java.util.List<DepartmentCardDto> cards = new java.util.ArrayList<>();
         for (Department department : departments) {
-            counts.put(department.getId(), userRepository.countByDepartmentIdAndApprovedTrue(department.getId()));
+            long count = userRepository.countByDepartmentIdAndApprovedTrue(department.getId());
+            String headName = department.getHead() != null ? department.getHead().getName() : "Не назначен";
+            cards.add(new DepartmentCardDto(department.getId(), department.getName(), headName, count));
         }
-        return counts;
+        return cards;
     }
 
     /**
@@ -435,8 +437,7 @@ public class AdminController {
                 ? departmentService.getDepartmentByName(name)
                 : departmentService.list();
 
-        model.addAttribute(DEPARTMENTS, departments);
-        model.addAttribute("departmentEmployeeCounts", buildDepartmentEmployeeCounts(departments));
+        model.addAttribute("departmentCards", buildDepartmentCards(departments));
         modelAttributeHelper.addUserAttributes(model, principal);
         return ADMIN_DEPARTMENTS;
     }
