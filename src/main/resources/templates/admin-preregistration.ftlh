@@ -77,23 +77,31 @@
     <div class="album py-5 bg-light">
         <div class="container">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-                <#list users as user>
-                    <div class="col">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <h4>${user.name}</h4>
-                                <br>
-                                <p class="card-text">Почта: ${user.email}</p>
-                                <br>
-                                <p class="card-text">Номер телефона: ${user.number_phone}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <a href="/admin/addUser/${user.id}" class="btn btn-success me-2">Подтвердить</a>
-                                    <a href="/admin/deleteUser/${user.id}" class="btn btn-danger me-2">Отклонить</a>
+                <#if !(users??) || !users?has_content>
+                    <div class="col-12">
+                        <div class="alert alert-secondary text-center mb-0">
+                            Запросов на регистрацию нет.
+                        </div>
+                    </div>
+                <#else>
+                    <#list users as user>
+                        <div class="col">
+                            <div class="card shadow-sm">
+                                <div class="card-body">
+                                    <h4>${user.name}</h4>
+                                    <br>
+                                    <p class="card-text">Почта: ${user.email}</p>
+                                    <br>
+                                    <p class="card-text">Номер телефона: ${user.number_phone}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="/admin/addUser/${user.id}" class="btn btn-success me-2">Подтвердить</a>
+                                        <a href="/admin/deleteUser/${user.id}" class="btn btn-danger me-2">Отклонить</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </#list>
+                    </#list>
+                </#if>
             </div>
         </div>
     </div>

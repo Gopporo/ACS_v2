@@ -81,57 +81,60 @@
             <h2 class="mb-0">Сводная статистика отдела</h2>
             <a class="btn btn-dark" href="/director/reports/export">Сформировать общий Excel-отчет</a>
         </div>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <div class="card shadow-sm p-3">
-                    <div class="text-muted">Всего отчетов</div>
-                    <div class="h4 mb-0">${(reportStats.totalReports)!0}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm p-3">
-                    <div class="text-muted">Сотрудников с отчетами</div>
-                    <div class="h4 mb-0">${(reportStats.uniqueEmployees)!0}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm p-3">
-                    <div class="text-muted">Выполненных заявок</div>
-                    <div class="h4 mb-0">${(reportStats.completedApplications)!0}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm p-3">
-                    <div class="text-muted">Среднее отчетов на сотрудника</div>
-                    <div class="h4 mb-0">${(reportStats.avgReportsPerEmployee)!0}</div>
-                </div>
-            </div>
-        </div>
 
         <#assign totalReports = (reportStats.totalReports)!0>
         <#assign uniqueEmployees = (reportStats.uniqueEmployees)!0>
         <#assign repeatReports = (totalReports - uniqueEmployees) >
 
-        <div class="row g-3 mt-1">
+        <div class="row g-3 mt-1 align-items-stretch">
             <div class="col-md-6">
-                <div class="card shadow-sm p-3">
+                <div class="card shadow-sm p-3 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="text-muted">Распределение отчетов</div>
                         <div class="small text-muted">уникальные vs повторные</div>
                     </div>
-                    <div style="height: 260px;">
+                    <div style="height: 420px;">
                         <canvas id="reportsDonut"></canvas>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card shadow-sm p-3">
-                    <div class="text-muted mb-2">Пояснение</div>
-                    <div class="mb-1"><b>Уникальные</b> — количество сотрудников, у которых есть хотя бы 1 отчет.</div>
-                    <div class="mb-1"><b>Повторные</b> — отчеты сверх первого по каждому сотруднику.</div>
-                    <hr class="my-2"/>
-                    <div class="text-muted">Подсчёт</div>
-                    <div>Повторные отчёты: <b>${repeatReports}</b></div>
+                <div class="h-100 d-flex flex-column gap-3">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="card shadow-sm p-3 h-100">
+                                <div class="text-muted">Всего отчетов</div>
+                                <div class="h4 mb-0">${(reportStats.totalReports)!0}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card shadow-sm p-3 h-100">
+                                <div class="text-muted">Сотрудников с отчетами</div>
+                                <div class="h4 mb-0">${(reportStats.uniqueEmployees)!0}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card shadow-sm p-3 h-100">
+                                <div class="text-muted">Выполненных заявок</div>
+                                <div class="h4 mb-0">${(reportStats.completedApplications)!0}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card shadow-sm p-3 h-100">
+                                <div class="text-muted">Среднее отчетов на сотрудника</div>
+                                <div class="h4 mb-0">${(reportStats.avgReportsPerEmployee)!0}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm p-3 flex-grow-1">
+                        <div class="text-muted mb-2">Пояснение</div>
+                        <div class="mb-1"><b>Уникальные</b> — количество сотрудников, у которых есть хотя бы 1 отчет.</div>
+                        <div class="mb-1"><b>Повторные</b> — отчеты сверх первого по каждому сотруднику.</div>
+                        <hr class="my-2"/>
+                        <div class="text-muted">Подсчёт</div>
+                        <div>Повторные отчёты: <b>${repeatReports}</b></div>
+                    </div>
                 </div>
             </div>
         </div>

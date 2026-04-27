@@ -29,7 +29,7 @@
 
     <style>
 
-        .card {
+        .zone-card {
             height: 300px;
             overflow: hidden; /* Скрыть содержимое за границей карточки */
         }
@@ -97,14 +97,18 @@
     <div class="container mb-4">
         <div class="card p-3">
             <h5 class="mb-3">Привязка сканера к зоне</h5>
-            <form action="/admin/scanner-zone" method="post" class="d-flex align-items-center gap-2">
-                <select name="zoneId" class="form-select" style="max-width: 360px;" required>
+            <form action="/admin/scanner-zone" method="post" class="row g-2 align-items-center">
+                <div class="col-12 col-md">
+                    <select name="zoneId" class="form-select" required>
                     <#list zones as zone>
                         <option value="${zone.id}" <#if scannerZoneId?? && scannerZoneId == zone.id>selected</#if>>${zone.name}</option>
                     </#list>
-                </select>
+                    </select>
+                </div>
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
-                <button class="btn btn-dark" type="submit">Сохранить зону сканера</button>
+                <div class="col-12 col-md-auto">
+                    <button class="btn btn-dark w-100" type="submit">Сохранить</button>
+                </div>
             </form>
             <#if successMessage??>
                 <div class="text-success mt-2">${successMessage}</div>
@@ -129,7 +133,7 @@
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
                 <#list zones as zone>
                     <div class="col">
-                        <div class="card shadow-sm">
+                        <div class="card shadow-sm zone-card">
                             <div class="card-body">
                                 <h4>${zone.name}</h4>
                                 <br>

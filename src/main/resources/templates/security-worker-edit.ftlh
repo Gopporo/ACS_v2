@@ -43,7 +43,9 @@
                     <label class="form-label">Уровень доступа</label>
                     <select class="form-select" name="userAccessLvl" required>
                         <#list accessLevels as lvl>
-                            <option value="${lvl}" <#if worker.userAccessLvl?? && worker.userAccessLvl == lvl>selected</#if>>${lvl}</option>
+                            <option value="${lvl}" <#if worker.userAccessLvl?? && worker.userAccessLvl == lvl>selected</#if>>
+                                ${lvl?string?replace("LEVEL_", "Уровень ")}
+                            </option>
                         </#list>
                     </select>
                 </div>

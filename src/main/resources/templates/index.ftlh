@@ -43,13 +43,15 @@
     <#include "components/navbar.ftl">
 </header>
 
-<main>
+<main class="d-flex flex-column" style="min-height: 100vh;">
 
-    <section class="py-5 text-center container">
-        <div class="row py-lg-5">
-            <div class="col-lg-6 col-md-8 mx-auto">
-                <h1 class="fw-light">Наш контроль - ваша безопасность</h1>
-                <p class="lead text-muted">Система контроля доступа сотрудников</p>
+    <section class="flex-grow-1 d-flex align-items-center justify-content-center text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 col-md-8 mx-auto">
+                    <h1 class="fw-light mb-3">Наш контроль - ваша безопасность</h1>
+                    <p class="lead text-muted mb-0">Система контроля доступа сотрудников</p>
+                </div>
             </div>
         </div>
     </section>

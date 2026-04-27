@@ -23,7 +23,9 @@
             <select name="accessLevel" class="form-select">
                 <option value="" <#if !(accessLevel??) || accessLevel == "">selected</#if>>Все</option>
                 <#list accessLevels as lvl>
-                    <option value="${lvl}" <#if accessLevel?? && accessLevel == lvl?string>selected</#if>>${lvl}</option>
+                    <option value="${lvl}" <#if accessLevel?? && accessLevel == lvl?string>selected</#if>>
+                        ${lvl?string?replace("LEVEL_", "Уровень ")}
+                    </option>
                 </#list>
             </select>
         </div>

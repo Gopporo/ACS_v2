@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 /**
  * Сервис для управления отделами
  */
@@ -143,7 +144,9 @@ public class DepartmentService {
      */
     public List<Department> list() {
         log.debug("Getting all departments");
-        return departmentRepository.findAll();
+        return departmentRepository.findAll().stream()
+                .filter(d -> d.getName() != null && !NO_DEPARTMENT_NAME.equalsIgnoreCase(d.getName()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -154,7 +157,9 @@ public class DepartmentService {
      */
     public List<Department> getDepartmentByName(String name) {
         log.debug("Getting departments by name: {}", name);
-        return departmentRepository.findDepartmentsByName(name);
+        return departmentRepository.findDepartmentsByName(name).stream()
+                .filter(d -> d.getName() != null && !NO_DEPARTMENT_NAME.equalsIgnoreCase(d.getName()))
+                .collect(Collectors.toList());
     }
 
     /**
