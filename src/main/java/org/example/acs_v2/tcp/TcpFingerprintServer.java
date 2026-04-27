@@ -9,6 +9,7 @@ import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.AccessAttemptRepository;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.repositories.ZoneRepository;
+import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -34,6 +35,7 @@ public class TcpFingerprintServer {
 
     private final AtomicBoolean registerMode = new AtomicBoolean(false);
     private final AtomicBoolean deleteMode = new AtomicBoolean(false);
+    private final AtomicReference<Long> scannerZoneId = new AtomicReference<>(1L);
 
     private final AtomicReference<User> pendingUser = new AtomicReference<>(null);
 
@@ -61,7 +63,7 @@ public class TcpFingerprintServer {
     }
 
     private Zone resolveDefaultZone() {
-        Zone zone = zoneRepository.findById(1L).orElse(null);
+        Zone zone = zoneRepository.findById(scannerZoneId.get()).orElse(null);
         if (zone != null) {
             return zone;
         }
@@ -244,6 +246,18 @@ public class TcpFingerprintServer {
 
     public boolean isRegisterModeEnabled() {
         return registerMode.get();
+    }
+
+    public void setScannerZoneId(Long zoneId) {
+        if (!zoneRepository.existsById(zoneId)) {
+            throw new ResourceNotFoundException("Zone", zoneId);
+        }
+        scannerZoneId.set(zoneId);
+        log.info("Scanner zone id set to {}", zoneId);
+    }
+
+    public Long getScannerZoneId() {
+        return scannerZoneId.get();
     }
 }
 

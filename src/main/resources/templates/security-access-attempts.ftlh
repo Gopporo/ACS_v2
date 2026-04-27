@@ -23,6 +23,29 @@
         <a class="btn btn-outline-danger <#if success?? && !success>active</#if>" href="/security/accessAttempts?success=false">Несанкционированный</a>
     </div>
 
+    <form method="get" action="/security/accessAttempts" class="row g-2 align-items-end mb-3">
+        <div class="col-md-6">
+            <label class="form-label">Сотрудник</label>
+            <select class="form-select" name="userId">
+                <option value="">Все сотрудники</option>
+                <#list users as user>
+                    <option value="${user.id}" <#if selectedUserId?? && selectedUserId == user.id>selected</#if>>${user.name}</option>
+                </#list>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Результат</label>
+            <select class="form-select" name="success">
+                <option value="" <#if !(success??)>selected</#if>>Все</option>
+                <option value="true" <#if success?? && success>selected</#if>>Санкционированный</option>
+                <option value="false" <#if success?? && !success>selected</#if>>Несанкционированный</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-dark w-100" type="submit">Применить</button>
+        </div>
+    </form>
+
     <div class="table-responsive">
         <table class="table table-bordered align-middle">
             <thead class="table-light">

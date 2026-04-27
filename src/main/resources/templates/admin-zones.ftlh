@@ -94,6 +94,27 @@
 
     <a href="/admin/addZone" class="btn btn-dark d-block mx-auto mb-3" style="width: 200px;">Добавить зону доступа</a><br>
 
+    <div class="container mb-4">
+        <div class="card p-3">
+            <h5 class="mb-3">Привязка сканера к зоне</h5>
+            <form action="/admin/scanner-zone" method="post" class="d-flex align-items-center gap-2">
+                <select name="zoneId" class="form-select" style="max-width: 360px;" required>
+                    <#list zones as zone>
+                        <option value="${zone.id}" <#if scannerZoneId?? && scannerZoneId == zone.id>selected</#if>>${zone.name}</option>
+                    </#list>
+                </select>
+                <input type="hidden" name="_csrf" value="${_csrf.token}">
+                <button class="btn btn-dark" type="submit">Сохранить зону сканера</button>
+            </form>
+            <#if successMessage??>
+                <div class="text-success mt-2">${successMessage}</div>
+            </#if>
+            <#if errorMessage??>
+                <div class="text-danger mt-2">${errorMessage}</div>
+            </#if>
+        </div>
+    </div>
+
     <!-- Строка для поиска -->
     <div class="container mb-4">
         <form id="searchForm" action="/getZoneByName" method="get" class="d-flex justify-content-center">

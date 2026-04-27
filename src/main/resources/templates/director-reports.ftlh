@@ -76,6 +76,38 @@
 </header>
 
 <main>
+    <div class="container mt-4 mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">Сводная статистика отдела</h2>
+            <a class="btn btn-dark" href="/director/reports/export">Сформировать общий Excel-отчет</a>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <div class="text-muted">Всего отчетов</div>
+                    <div class="h4 mb-0">${(reportStats.totalReports)!0}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <div class="text-muted">Сотрудников с отчетами</div>
+                    <div class="h4 mb-0">${(reportStats.uniqueEmployees)!0}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <div class="text-muted">Выполненных заявок</div>
+                    <div class="h4 mb-0">${(reportStats.completedApplications)!0}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm p-3">
+                    <div class="text-muted">Среднее отчетов на сотрудника</div>
+                    <div class="h4 mb-0">${(reportStats.avgReportsPerEmployee)!0}</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="album py-5 bg-light">
         <div class="container">

@@ -43,15 +43,15 @@ public class DataInitializer implements CommandLineRunner {
 
         ensureDepartments();
         User admin = createRoleUser("admin@acs.local",
-                "Администратор Системы",
+                "Иванов Иван Иванович",
                 "+375291111111",
                 "Системный администратор",
                 AccessLevel.LEVEL_5,
                 Role.ROLE_ADMIN,
-                departmentRepository.findByName("Администрация"));
+                departmentRepository.findByName("Без отдела"));
 
         User director = createRoleUser("director@acs.local",
-                "Директор Отдела",
+                "Петров Петр Петрович",
                 "+375292222222",
                 "Руководитель отдела",
                 AccessLevel.LEVEL_4,
@@ -59,28 +59,20 @@ public class DataInitializer implements CommandLineRunner {
                 departmentRepository.findByName("Без отдела"));
 
         User security = createRoleUser("security@acs.local",
-                "Сотрудник Охраны",
+                "Сидоров Сидор Сидорович",
                 "+375293333333",
                 "Сотрудник безопасности",
                 AccessLevel.LEVEL_3,
                 Role.ROLE_SECURITY,
-                departmentRepository.findByName("Безопасность"));
+                departmentRepository.findByName("Без отдела"));
 
         User user = createRoleUser("user@acs.local",
-                "Обычный Сотрудник",
+                "Козлов Костя Козлович",
                 "+375294444444",
                 "Сотрудник",
                 AccessLevel.LEVEL_2,
                 Role.ROLE_USER,
-                departmentRepository.findByName("Склад"));
-
-        // На всякий случай: department_id=5 в native-запросе у UserRepository использует "Без отдела"
-        // как "сентинел" (пустой отдел).
-        Department noneDept = departmentRepository.findByName("Без отдела");
-        if (noneDept != null) {
-            noneDept.setHead(admin);
-            departmentRepository.save(noneDept);
-        }
+                departmentRepository.findByName("Без отдела"));
 
         ensureZones();
         ensureAttempts(admin, security, user);
@@ -90,6 +82,10 @@ public class DataInitializer implements CommandLineRunner {
         if (departmentRepository.count() != 0) {
             return;
         }
+
+        Department none = new Department();
+        none.setName("Без отдела");
+        departmentRepository.save(none);
 
         Department it = new Department();
         it.setName("IT");
@@ -106,12 +102,6 @@ public class DataInitializer implements CommandLineRunner {
         Department administration = new Department();
         administration.setName("Администрация");
         departmentRepository.save(administration);
-
-        // Важно: в UserRepository есть nativeQuery с WHERE u.department_id = 5.
-        // Поэтому "Без отдела" должен быть 5-м департаментом, если БД пустая.
-        Department none = new Department();
-        none.setName("Без отдела");
-        departmentRepository.save(none);
     }
 
     private User createRoleUser(String email,

@@ -41,7 +41,25 @@
                             <option value="${director.id}">${director.name}</option>
                         </#list>
                     </select>
-                </div><input type="hidden" name="_csrf" value="${_csrf.token}">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Сотрудники отдела (без отдела):</label>
+                    <#if availableEmployees?? && (availableEmployees?size > 0)>
+                        <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                            <#list availableEmployees as employee>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="employeeIds" value="${employee.id}" id="employee-${employee.id}">
+                                    <label class="form-check-label" for="employee-${employee.id}">
+                                        ${employee.name} (${employee.position!'-'})
+                                    </label>
+                                </div>
+                            </#list>
+                        </div>
+                    <#else>
+                        <div class="text-muted">Нет сотрудников без отдела.</div>
+                    </#if>
+                </div>
+                <input type="hidden" name="_csrf" value="${_csrf.token}">
                 <button type="submit" class="btn btn-dark">Добавить</button>
             </form>
             <div class="ss">

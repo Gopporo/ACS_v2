@@ -36,7 +36,7 @@ public class Application{
     @JoinColumn(name = "user_id") // Связь с таблицей пользователей
     private User user; // Пользователь, который принял заявку
 
-    @OneToOne(mappedBy = "application") // Обратная связь с Report
+    @OneToOne(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true) // Обратная связь с Report
     private Report report;
 
 }

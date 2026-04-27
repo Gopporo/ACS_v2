@@ -5,13 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Department;
 import org.example.acs_v2.models.User;
-import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.Role;
+import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.services.ZoneService;
+import org.example.acs_v2.tcp.TcpFingerprintServer;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.example.acs_v2.constants.ModelAttributeConstants.*;
 import static org.example.acs_v2.constants.RedirectConstants.*;
@@ -41,6 +43,7 @@ public class AdminController {
     private final ZoneService zoneService;
     private final DepartmentService departmentService;
     private final ModelAttributeHelper modelAttributeHelper;
+    private final TcpFingerprintServer tcpFingerprintServer;
 
     private AccessLevel parseAccessLevel(String value) {
         if (value == null || value.isBlank() || "-1".equals(value)) {
@@ -77,8 +80,14 @@ public class AdminController {
         }
 
         List<Department> departments = departmentService.list();
+        Set<Role> userRoles = user.getRoles();
+        String selectedRole = userRoles.stream()
+                .findFirst()
+                .map(Role::name)
+                .orElse(Role.ROLE_USER.name());
         model.addAttribute(USER, user);
         model.addAttribute(DEPARTMENTS, departments);
+        model.addAttribute("selectedRole", selectedRole);
         modelAttributeHelper.addUserAttributes(model, principal);
 
         return ADD_USER;
@@ -115,6 +124,10 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Error updating user {}: {}", userId, e.getMessage());
             model.addAttribute(ERROR_MESSAGE, "Ошибка при обновлении пользователя: " + e.getMessage());
+            User user = userService.getById(userId);
+            model.addAttribute(USER, user);
+            model.addAttribute(DEPARTMENTS, departmentService.list());
+            model.addAttribute("selectedRole", role);
             return ADD_USER;
         }
     }
@@ -127,7 +140,7 @@ public class AdminController {
         try {
             userService.deleteUserById(id);
             log.info("User {} deleted successfully", id);
-            return REDIRECT_ADMIN_PREREGISTRATION;
+            return REDIRECT_ADMIN_USERS;
         } catch (ResourceNotFoundException e) {
             log.error("Error deleting user {}: {}", id, e.getMessage());
             model.addAttribute(ERROR_MESSAGE, e.getMessage());
@@ -181,8 +194,20 @@ public class AdminController {
     public String manageZones(Model model, Principal principal) {
         List<Zone> zones = zoneService.list();
         model.addAttribute(ZONES, zones);
+        model.addAttribute("scannerZoneId", tcpFingerprintServer.getScannerZoneId());
         modelAttributeHelper.addUserAttributes(model, principal);
         return ADMIN_ZONES;
+    }
+
+    @PostMapping("/admin/scanner-zone")
+    public String updateScannerZone(@RequestParam Long zoneId, RedirectAttributes redirectAttributes) {
+        try {
+            tcpFingerprintServer.setScannerZoneId(zoneId);
+            redirectAttributes.addFlashAttribute(SUCCESS_MESSAGE, "Зона сканера обновлена");
+        } catch (ResourceNotFoundException e) {
+            redirectAttributes.addFlashAttribute(ERROR_MESSAGE, e.getMessage());
+        }
+        return REDIRECT_ADMIN_ZONES;
     }
 
     /**
@@ -286,7 +311,11 @@ public class AdminController {
     public String addDepartmentMethod(Principal principal, Model model) {
         log.debug("Displaying add department form");
         List<User> availableDirectors = userService.findDirectorsWithoutDepartment();
+        List<User> availableEmployees = userService.findApprovedUsersWithoutDepartment().stream()
+                .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                .toList();
         model.addAttribute(AVAILABLE_DIRECTORS, availableDirectors);
+        model.addAttribute("availableEmployees", availableEmployees);
         modelAttributeHelper.addUserAttributes(model, principal);
         return ADD_DEPARTMENT;
     }
@@ -296,12 +325,17 @@ public class AdminController {
      */
     @PostMapping("/admin/addDepartment")
     public String createDepartment(@RequestParam Long headId,
+                                   @RequestParam(required = false) List<Long> employeeIds,
                                    @ModelAttribute Department department,
                                    Model model) {
         try {
             if (headId == null) {
                 log.warn("Head ID is null when creating department");
                 model.addAttribute(ERROR_MESSAGE, "Не выбран руководитель!");
+                model.addAttribute(AVAILABLE_DIRECTORS, userService.findDirectorsWithoutDepartment());
+                model.addAttribute("availableEmployees", userService.findApprovedUsersWithoutDepartment().stream()
+                        .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                        .toList());
                 return ADD_DEPARTMENT;
             }
 
@@ -309,11 +343,15 @@ public class AdminController {
             if (head == null) {
                 log.warn("Head with ID {} not found", headId);
                 model.addAttribute(ERROR_MESSAGE, "Руководитель с таким ID не найден!");
+                model.addAttribute(AVAILABLE_DIRECTORS, userService.findDirectorsWithoutDepartment());
+                model.addAttribute("availableEmployees", userService.findApprovedUsersWithoutDepartment().stream()
+                        .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                        .toList());
                 return ADD_DEPARTMENT;
             }
 
             department.setHead(head);
-            departmentService.createDepartment(department, headId);
+            departmentService.createDepartment(department, headId, employeeIds);
             log.info("Department {} created successfully", department.getName());
 
             return REDIRECT_ADMIN_DEPARTMENTS;
@@ -321,6 +359,10 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Error creating department {}: {}", department.getName(), e.getMessage());
             model.addAttribute(ERROR_MESSAGE, "Отдел: " + department.getName() + " уже существует");
+            model.addAttribute(AVAILABLE_DIRECTORS, userService.findDirectorsWithoutDepartment());
+            model.addAttribute("availableEmployees", userService.findApprovedUsersWithoutDepartment().stream()
+                    .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                    .toList());
             return ADD_DEPARTMENT;
         }
     }
@@ -328,9 +370,26 @@ public class AdminController {
     @GetMapping("/admin/editDepartment/{id}")
     public String editDepartmentPage(@PathVariable Long id, Principal principal, Model model) {
         Department department = departmentService.getDepartmentById(id);
-        List<User> availableDirectors = userService.findDirectorsWithoutDepartment();
+        List<User> availableDirectors = userService.findDirectorsWithoutDepartment().stream().toList();
+        if (department.getHead() != null && !availableDirectors.contains(department.getHead())) {
+            availableDirectors = new java.util.ArrayList<>(availableDirectors);
+            availableDirectors.add(0, department.getHead());
+        }
+        List<User> currentEmployees = userService.findApprovedUsersByDepartmentId(id).stream()
+                .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                .toList();
+        List<User> availableEmployees = userService.findApprovedUsersWithoutDepartment().stream()
+                .filter(user -> user.getRoles().contains(Role.ROLE_USER))
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        for (User employee : currentEmployees) {
+            if (availableEmployees.stream().noneMatch(u -> u.getId().equals(employee.getId()))) {
+                availableEmployees.add(employee);
+            }
+        }
         model.addAttribute("department", department);
         model.addAttribute(AVAILABLE_DIRECTORS, availableDirectors);
+        model.addAttribute("availableEmployees", availableEmployees);
+        model.addAttribute("selectedEmployeeIds", currentEmployees.stream().map(User::getId).toList());
         modelAttributeHelper.addUserAttributes(model, principal);
         return "admin-edit-department";
     }
@@ -338,16 +397,9 @@ public class AdminController {
     @PostMapping("/admin/updateDepartment/{id}")
     public String updateDepartment(@PathVariable Long id,
                                    @RequestParam(required = false) Long headId,
-                                   @RequestParam String name) {
-        Department department = departmentService.getDepartmentById(id);
-        department.setName(name);
-        if (headId != null) {
-            User head = userRepository.findById(headId).orElseThrow(() -> new ResourceNotFoundException("User", headId));
-            department.setHead(head);
-            head.setDepartment(department);
-            userRepository.save(head);
-        }
-        departmentService.save(department);
+                                   @RequestParam String name,
+                                   @RequestParam(required = false) List<Long> employeeIds) {
+        departmentService.updateDepartmentWithEmployees(id, name, headId, employeeIds);
         return REDIRECT_ADMIN_DEPARTMENTS;
     }
 

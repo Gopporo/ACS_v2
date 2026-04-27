@@ -18,12 +18,22 @@ public class AccessAttemptService {
 
     @Transactional(readOnly = true)
     public List<AccessAttempt> getAllAttempts() {
-        return accessAttemptRepository.findAll();
+        return accessAttemptRepository.findAllByOrderByTimestampDesc();
     }
 
     @Transactional(readOnly = true)
     public List<AccessAttempt> getAttemptsBySuccess(boolean success) {
-        return accessAttemptRepository.findBySuccess(success);
+        return accessAttemptRepository.findBySuccessOrderByTimestampDesc(success);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccessAttempt> getAttemptsByUser(Long userId) {
+        return accessAttemptRepository.findByUserIdOrderByTimestampDesc(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccessAttempt> getAttemptsByUserAndSuccess(Long userId, boolean success) {
+        return accessAttemptRepository.findByUserIdAndSuccessOrderByTimestampDesc(userId, success);
     }
 
     @Transactional(readOnly = true)

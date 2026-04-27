@@ -96,8 +96,7 @@
                                 <br>
                                 <p class="card-text">Глава отдела:  <#if department.head??>${department.head.name}<#else>Не назначен</#if></p>
                                 <br>
-                                <#--Сюда будет передавать переменная с величиной списка сотрудников отдела-->
-                                <p class="card-text">Количество сотрудников: <#--${department.}--></p>
+                                <p class="card-text">Количество сотрудников: <#if department.users??>${department.users?size}<#else>0</#if></p>
                                 <br>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group">

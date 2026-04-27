@@ -126,8 +126,7 @@
                                             <a href="/admin/userBlock/${user.id}" class="btn btn-dark me-2">Разблокировать</a>
                                         </#if>
                                     </#if>
-                                    <a href="/admin/addUser/${user.id}" class="btn btn-dark me-2">Параметры</a>
-                                    <a href="/admin/changeRole/${user.id}" class="btn btn-dark me-2">Редактировать</a>
+                                    <a href="/admin/addUser/${user.id}" class="btn btn-dark me-2">Редактировать</a>
                                     <a href="/user/${user.id}" class="btn btn-dark me-2">Просмотр</a>
                                 </div>
                             </div>

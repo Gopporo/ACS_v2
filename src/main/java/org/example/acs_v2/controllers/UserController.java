@@ -136,6 +136,24 @@ public class UserController {
         return Map.of("fingerprintSet", fingerprintSet);
     }
 
+    @PostMapping(value = "/registration/fingerprint/retry", produces = "application/json")
+    @ResponseBody
+    public Map<String, Object> retryFingerprintRegistration(@RequestParam Long userId) {
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Map.of("ok", false, "message", "Пользователь не найден");
+        }
+        tcpFingerprintServer.enableRegisterMode(user);
+        return Map.of("ok", true, "message", "Повторное сканирование запущено");
+    }
+
+    @PostMapping("/registration/fingerprint/cancel")
+    public String cancelFingerprintRegistration(@RequestParam Long userId) {
+        tcpFingerprintServer.cancelRegisterMode();
+        userService.deletePendingUserWithoutFingerprint(userId);
+        return "redirect:/registration";
+    }
+
     /**
      * Информация о пользователе
      */

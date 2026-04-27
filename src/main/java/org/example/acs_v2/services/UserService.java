@@ -319,6 +319,14 @@ public class UserService {
         return userRepository.findDirectorsWithoutDepartment();
     }
 
+    public List<User> findApprovedUsersWithoutDepartment() {
+        return userRepository.findByWithoutDepartmentAndApprovedTrue();
+    }
+
+    public List<User> findApprovedUsersByDepartmentId(Long departmentId) {
+        return userRepository.findByDepartmentIdAndApprovedTrue(departmentId);
+    }
+
     /**
      * Переключает статус активности пользователя
      *
@@ -397,5 +405,18 @@ public class UserService {
         }
         userRepository.deleteById(id);
         log.info("User {} deleted successfully", id);
+    }
+
+    public void deletePendingUserWithoutFingerprint(Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return;
+        }
+        boolean pending = !user.isApproved() && !user.isActive();
+        boolean noFingerprint = user.getFingerprintHash() == null || user.getFingerprintHash().isBlank();
+        if (pending && noFingerprint) {
+            userRepository.delete(user);
+            log.info("Pending user {} deleted after fingerprint registration cancellation", id);
+        }
     }
 }

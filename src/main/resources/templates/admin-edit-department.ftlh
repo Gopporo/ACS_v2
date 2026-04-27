@@ -22,15 +22,28 @@
             <label class="form-label">Глава отдела</label>
             <select name="headId" class="form-select">
                 <option value="">Не назначен</option>
-                <#if department.head??>
-                    <option value="${department.head.id}" selected>${department.head.name}</option>
-                </#if>
                 <#list availableDirectors as director>
-                    <#if !(department.head??) || director.id != department.head.id>
-                        <option value="${director.id}">${director.name}</option>
-                    </#if>
+                    <option value="${director.id}" <#if department.head?? && director.id == department.head.id>selected</#if>>${director.name}</option>
                 </#list>
             </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Сотрудники отдела</label>
+            <div class="border rounded p-2" style="max-height: 240px; overflow-y: auto;">
+                <#list availableEmployees as employee>
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="employeeIds"
+                               value="${employee.id}"
+                               id="employee-${employee.id}"
+                               <#if selectedEmployeeIds?? && selectedEmployeeIds?seq_contains(employee.id)>checked</#if>>
+                        <label class="form-check-label" for="employee-${employee.id}">
+                            ${employee.name} (${employee.position!'-'})
+                        </label>
+                    </div>
+                </#list>
+            </div>
         </div>
         <input type="hidden" name="_csrf" value="${_csrf.token}">
         <button type="submit" class="btn btn-dark">Сохранить</button>

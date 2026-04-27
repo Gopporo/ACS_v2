@@ -47,35 +47,49 @@
                 </div>
                 <input type="hidden" name="userId" value="${user.id!''}">
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="role" id="roleUser" value="ROLE_USER" checked>
+                    <input class="form-check-input" type="radio" name="role" id="roleUser" value="ROLE_USER"
+                           <#if selectedRole?? && selectedRole == "ROLE_USER">checked</#if>>
                     <label class="form-check-label" for="roleUser">
                         Сотрудник
                     </label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="role" id="roleDirector" value="ROLE_DIRECTOR">
+                    <input class="form-check-input" type="radio" name="role" id="roleDirector" value="ROLE_DIRECTOR"
+                           <#if selectedRole?? && selectedRole == "ROLE_DIRECTOR">checked</#if>>
                     <label class="form-check-label" for="roleDirector">
                         Начальник
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="role" id="roleSecurity" value="ROLE_SECURITY"
+                           <#if selectedRole?? && selectedRole == "ROLE_SECURITY">checked</#if>>
+                    <label class="form-check-label" for="roleSecurity">
+                        Охрана
                     </label>
                 </div>
                 <br>
                 <select id="department" name="department_id" class="form-select">
                     <#list departments as department>
-                        <option value="${department.id}">${department.name}</option>
+                        <option value="${department.id}" <#if user.department?? && user.department.id == department.id>selected</#if>>${department.name}</option>
                     </#list>
                 </select>
                 <br>
-                <input name="position" type="text" class="form-control" placeholder="Введите должность" required><br>
+                <input name="position" type="text" class="form-control" placeholder="Введите должность" value="${user.position!''}" required><br>
                 <select name="userAccessLvl" class="form-select" required>
-                    <option value="LEVEL_1">Уровень 1</option>
-                    <option value="LEVEL_2">Уровень 2</option>
-                    <option value="LEVEL_3">Уровень 3</option>
-                    <option value="LEVEL_4">Уровень 4</option>
-                    <option value="LEVEL_5">Уровень 5</option>
+                    <option value="LEVEL_1" <#if user.userAccessLvl?has_content && user.userAccessLvl?string == "LEVEL_1">selected</#if>>Уровень 1</option>
+                    <option value="LEVEL_2" <#if user.userAccessLvl?has_content && user.userAccessLvl?string == "LEVEL_2">selected</#if>>Уровень 2</option>
+                    <option value="LEVEL_3" <#if user.userAccessLvl?has_content && user.userAccessLvl?string == "LEVEL_3">selected</#if>>Уровень 3</option>
+                    <option value="LEVEL_4" <#if user.userAccessLvl?has_content && user.userAccessLvl?string == "LEVEL_4">selected</#if>>Уровень 4</option>
+                    <option value="LEVEL_5" <#if user.userAccessLvl?has_content && user.userAccessLvl?string == "LEVEL_5">selected</#if>>Уровень 5</option>
                 </select><br>
                 <input type="hidden" name="_csrf" value="${_csrf.token}">
-                <button type="submit" class="btn btn-dark">Добавить</button>
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn btn-dark">Сохранить</button>
+                </div>
             </form>
+            <div class="d-flex justify-content-center mt-4">
+                <a href="/admin/deleteUser/${user.id!''}" class="btn btn-outline-danger">Удалить пользователя</a>
+            </div>
             <div class="ss">
                 <#if errorMessage??>
                     <h2 style="color: black">${errorMessage}</h2>

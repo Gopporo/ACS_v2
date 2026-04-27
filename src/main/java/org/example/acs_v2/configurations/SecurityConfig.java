@@ -29,6 +29,8 @@ public class SecurityConfig {
                         "/registration",
                         "/registration/fingerprint",
                         "/registration/fingerprint/status",
+                        "/registration/fingerprint/retry",
+                        "/registration/fingerprint/cancel",
                         "/login"
                 )
                 .permitAll()

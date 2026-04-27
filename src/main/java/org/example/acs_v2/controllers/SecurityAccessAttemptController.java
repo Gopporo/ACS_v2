@@ -6,6 +6,7 @@ import org.example.acs_v2.dto.AccessAttemptDto;
 import org.example.acs_v2.models.AccessAttempt;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.services.AccessAttemptService;
+import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.example.acs_v2.constants.ViewConstants;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,13 +25,24 @@ import java.util.List;
 public class SecurityAccessAttemptController {
 
     private final AccessAttemptService accessAttemptService;
+    private final UserService userService;
     private final ModelAttributeHelper modelAttributeHelper;
 
     @GetMapping("/security/accessAttempts")
-    public String listAccessAttempts(@RequestParam(required = false) Boolean success, Model model, java.security.Principal principal) {
-        List<AccessAttempt> attempts = (success == null)
-                ? accessAttemptService.getAllAttempts()
-                : accessAttemptService.getAttemptsBySuccess(success);
+    public String listAccessAttempts(@RequestParam(required = false) Boolean success,
+                                     @RequestParam(required = false) Long userId,
+                                     Model model,
+                                     java.security.Principal principal) {
+        List<AccessAttempt> attempts;
+        if (userId != null && success != null) {
+            attempts = accessAttemptService.getAttemptsByUserAndSuccess(userId, success);
+        } else if (userId != null) {
+            attempts = accessAttemptService.getAttemptsByUser(userId);
+        } else if (success != null) {
+            attempts = accessAttemptService.getAttemptsBySuccess(success);
+        } else {
+            attempts = accessAttemptService.getAllAttempts();
+        }
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
@@ -62,6 +74,10 @@ public class SecurityAccessAttemptController {
 
         model.addAttribute("accessAttempts", dtos);
         model.addAttribute("success", success);
+        model.addAttribute("selectedUserId", userId);
+        model.addAttribute("users", userService.list().stream()
+                .filter(u -> u.getFirstName() == null || !"Unknown".equalsIgnoreCase(u.getFirstName()))
+                .toList());
         modelAttributeHelper.addCommonAttributes(model, principal);
         return ViewConstants.SECURITY_ACCESS_ATTEMPTS;
     }

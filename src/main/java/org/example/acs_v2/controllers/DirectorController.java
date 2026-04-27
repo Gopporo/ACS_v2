@@ -5,11 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.acs_v2.constants.ModelAttributeConstants;
 import org.example.acs_v2.constants.RedirectConstants;
 import org.example.acs_v2.constants.ViewConstants;
+import org.example.acs_v2.dto.DirectorReportStatsDto;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.*;
 import org.example.acs_v2.models.enums.AccessLevel;
 import org.example.acs_v2.services.*;
 import org.example.acs_v2.utils.ModelAttributeHelper;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.io.ByteArrayOutputStream;
 import java.security.Principal;
 import java.util.List;
 
@@ -329,10 +337,76 @@ public class DirectorController {
     @GetMapping("/director/reports")
     public String manageReports(Model model, Principal principal) {
         log.debug("Director accessing reports management page");
-        List<Report> reports = reportService.list();
+        User director = userService.getByEmail(principal.getName());
+        if (director == null || director.getDepartment() == null) {
+            model.addAttribute(ModelAttributeConstants.REPORTS, List.of());
+            model.addAttribute("reportStats", new DirectorReportStatsDto(0, 0, 0, 0));
+            modelAttributeHelper.addCommonAttributes(model, principal);
+            return ViewConstants.DIRECTOR_REPORTS;
+        }
+        List<Report> reports = reportService.listOfDepartmentReports(director.getDepartment().getId());
+        DirectorReportStatsDto stats = reportService.buildDepartmentStats(reports);
         model.addAttribute(ModelAttributeConstants.REPORTS, reports);
+        model.addAttribute("reportStats", stats);
         modelAttributeHelper.addCommonAttributes(model, principal);
         return ViewConstants.DIRECTOR_REPORTS;
+    }
+
+    @GetMapping("/director/reports/export")
+    public ResponseEntity<byte[]> exportDepartmentReports(Principal principal) {
+        User director = userService.getByEmail(principal.getName());
+        if (director == null || director.getDepartment() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<Report> reports = reportService.listOfDepartmentReports(director.getDepartment().getId());
+        DirectorReportStatsDto stats = reportService.buildDepartmentStats(reports);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            XSSFSheet statsSheet = workbook.createSheet("Статистика");
+            int rowIndex = 0;
+            Row header = statsSheet.createRow(rowIndex++);
+            header.createCell(0).setCellValue("Показатель");
+            header.createCell(1).setCellValue("Значение");
+            Row r1 = statsSheet.createRow(rowIndex++);
+            r1.createCell(0).setCellValue("Всего отчетов");
+            r1.createCell(1).setCellValue(stats.getTotalReports());
+            Row r2 = statsSheet.createRow(rowIndex++);
+            r2.createCell(0).setCellValue("Уникальных сотрудников");
+            r2.createCell(1).setCellValue(stats.getUniqueEmployees());
+            Row r3 = statsSheet.createRow(rowIndex++);
+            r3.createCell(0).setCellValue("Выполненных заявок");
+            r3.createCell(1).setCellValue(stats.getCompletedApplications());
+            Row r4 = statsSheet.createRow(rowIndex++);
+            r4.createCell(0).setCellValue("Среднее отчетов на сотрудника");
+            r4.createCell(1).setCellValue(stats.getAvgReportsPerEmployee());
+
+            XSSFSheet reportsSheet = workbook.createSheet("Отчеты");
+            Row reportsHeader = reportsSheet.createRow(0);
+            reportsHeader.createCell(0).setCellValue("Дата");
+            reportsHeader.createCell(1).setCellValue("Сотрудник");
+            reportsHeader.createCell(2).setCellValue("Заявка");
+            reportsHeader.createCell(3).setCellValue("Содержание отчета");
+            reportsHeader.createCell(4).setCellValue("Статус заявки");
+
+            int reportRowIndex = 1;
+            for (Report report : reports) {
+                Row row = reportsSheet.createRow(reportRowIndex++);
+                row.createCell(0).setCellValue(report.getCreatedAtFormatted());
+                row.createCell(1).setCellValue(report.getApplication().getUser().getName());
+                row.createCell(2).setCellValue(report.getApplication().getName());
+                row.createCell(3).setCellValue(report.getReportDisc());
+                row.createCell(4).setCellValue(report.getApplication().isCompleted() ? "Выполнена" : "В работе");
+            }
+
+            workbook.write(out);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=department-reports.xlsx")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(out.toByteArray());
+        } catch (Exception e) {
+            log.error("Error exporting reports to Excel", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**

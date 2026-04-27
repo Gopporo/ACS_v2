@@ -41,6 +41,7 @@
                 <th>Телефон</th>
                 <th>Уровень доступа</th>
                 <th>Отпечаток</th>
+                <th>События доступа</th>
             </tr>
             </thead>
             <tbody>
@@ -66,6 +67,9 @@
                         <#else>
                             -
                         </#if>
+                    </td>
+                    <td>
+                        <a href="/security/accessAttempts?userId=${worker.id}" class="btn btn-sm btn-outline-dark">Просмотреть</a>
                     </td>
                 </tr>
             </#list>

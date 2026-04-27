@@ -1,12 +1,15 @@
 package org.example.acs_v2;
 
 import org.example.acs_v2.controllers.AdminController;
+import org.example.acs_v2.models.Department;
+import org.example.acs_v2.models.Role;
 import org.example.acs_v2.models.User;
 import org.example.acs_v2.models.Zone;
 import org.example.acs_v2.repositories.UserRepository;
 import org.example.acs_v2.services.DepartmentService;
 import org.example.acs_v2.services.UserService;
 import org.example.acs_v2.services.ZoneService;
+import org.example.acs_v2.tcp.TcpFingerprintServer;
 import org.example.acs_v2.utils.ModelAttributeHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +20,9 @@ import org.springframework.ui.Model;
 
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -36,6 +41,9 @@ public class AdminControllerTests {
 
     @Mock
     private DepartmentService departmentService;
+
+    @Mock
+    private TcpFingerprintServer tcpFingerprintServer;
 
     @Mock
     private ModelAttributeHelper modelAttributeHelper;
@@ -74,7 +82,7 @@ public class AdminControllerTests {
 
         String viewName = adminController.deleteUser(userId, model);
 
-        assertEquals("redirect:/admin/preregistration", viewName);
+        assertEquals("redirect:/admin/users", viewName);
         verify(userService).deleteUserById(userId);
     }
 
@@ -105,14 +113,13 @@ public class AdminControllerTests {
 
     @Test
     public void testGetUsers() {
-        int accessLevel = 3;
+        String accessLevel = "3";
         List<User> mockUsers = new ArrayList<>();
         User user = new User();
         user.setId(1L);
-        user.setUserAccessLvl(accessLevel);
         mockUsers.add(user);
 
-        when(userService.getUsersByAccessLvl(accessLevel)).thenReturn(mockUsers);
+        when(userService.getUsersByAccessLvl(org.example.acs_v2.models.enums.AccessLevel.LEVEL_3)).thenReturn(mockUsers);
         String viewName = adminController.getUsers(accessLevel, model, principal);
 
         assertEquals("admin-users", viewName);
@@ -122,17 +129,43 @@ public class AdminControllerTests {
 
     @Test
     public void testGetZones() {
-        int accessLevel = 2;
+        String accessLevel = "2";
         List<Zone> mockZones = new ArrayList<>();
         Zone zone = new Zone();
-        zone.setZoneAccessLvl(accessLevel);
         mockZones.add(zone);
 
-        when(zoneService.getZonesByAccessLvl(accessLevel)).thenReturn(mockZones);
+        when(zoneService.getZonesByAccessLvl(org.example.acs_v2.models.enums.AccessLevel.LEVEL_2)).thenReturn(mockZones);
         String viewName = adminController.getZones(accessLevel, model, principal);
 
         assertEquals("admin-zones", viewName);
         verify(model).addAttribute("zones", mockZones);
         verify(modelAttributeHelper).addUserAttributes(model, principal);
+    }
+
+    @Test
+    public void testAddDepartmentPageShowsAvailableDirectorsAndEmployees() {
+        User director = new User();
+        director.setId(10L);
+        director.setRoles(Set.of(Role.ROLE_DIRECTOR));
+
+        User employee = new User();
+        employee.setId(20L);
+        employee.setRoles(Set.of(Role.ROLE_USER));
+
+        when(userService.findDirectorsWithoutDepartment()).thenReturn(List.of(director));
+        when(userService.findApprovedUsersWithoutDepartment()).thenReturn(List.of(employee));
+
+        String view = adminController.addDepartmentMethod(principal, model);
+
+        assertEquals("addDepartment", view);
+        verify(model).addAttribute("availableDirectors", List.of(director));
+        verify(model).addAttribute("availableEmployees", List.of(employee));
+    }
+
+    @Test
+    public void testUpdateDepartmentWithEmployees() {
+        String view = adminController.updateDepartment(7L, 10L, "R&D", List.of(20L, 21L));
+        assertEquals("redirect:/admin/departments", view);
+        verify(departmentService).updateDepartmentWithEmployees(7L, "R&D", 10L, List.of(20L, 21L));
     }
 }

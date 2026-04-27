@@ -1,6 +1,7 @@
 package org.example.acs_v2.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.acs_v2.dto.DirectorReportStatsDto;
 import org.example.acs_v2.exceptions.ResourceNotFoundException;
 import org.example.acs_v2.models.Application;
 import org.example.acs_v2.models.Report;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -88,6 +90,31 @@ public class ReportService {
                 new ResourceNotFoundException("Report", id));
         report.setCreatedAtFormatted(report.getCreatedAt().format(formatter));
         return report;
+    }
+
+    public List<Report> listOfDepartmentReports(Long departmentId) {
+        List<Report> reports = reportRepository.findByApplicationUserDepartmentId(departmentId);
+        for (Report report : reports) {
+            report.setCreatedAtFormatted(report.getCreatedAt().format(formatter));
+        }
+        return reports;
+    }
+
+    public DirectorReportStatsDto buildDepartmentStats(List<Report> reports) {
+        long totalReports = reports.size();
+        long uniqueEmployees = reports.stream()
+                .map(report -> report.getApplication() != null ? report.getApplication().getUser() : null)
+                .filter(Objects::nonNull)
+                .map(user -> user.getId())
+                .distinct()
+                .count();
+        long completedApplications = reports.stream()
+                .map(Report::getApplication)
+                .filter(Objects::nonNull)
+                .filter(Application::isCompleted)
+                .count();
+        long avgReportsPerEmployee = uniqueEmployees == 0 ? 0 : Math.round((double) totalReports / uniqueEmployees);
+        return new DirectorReportStatsDto(totalReports, uniqueEmployees, completedApplications, avgReportsPerEmployee);
     }
 
 }
