@@ -22,9 +22,9 @@
         <br>
         Номер телефона: <b>${user.number_phone}</b>
         <br>
-        Почта:<b>${user.email}</b>
+        Почта: <b>${user.email}</b>
         <br>
-        Уровень доступа:<b>${user.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</b>
+        Уровень доступа: <b>${user.userAccessLvl?string?replace("LEVEL_", "Уровень ")}</b>
         <br>
         <br>
         <a class="btn btn-outline-dark" href="/user/edit/${user.id}">Редактировать</a>
